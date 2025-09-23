@@ -37,9 +37,9 @@ const DashboardStats: React.FC = () => {
     },
     {
       title: 'Active Employees',
-      value: data.overview.totalRegularEmployees.toLocaleString(),
-      change: calculateChange(data.overview.totalRegularEmployees, data.overview.totalRegularEmployees - 3),
-      changeType: getChangeType(calculateChange(data.overview.totalRegularEmployees, data.overview.totalRegularEmployees - 3)),
+      value: (data.overview.totalEmployees - data.overview.totalInactiveEmployees).toLocaleString(),
+      change: calculateChange(data.overview.totalEmployees - data.overview.totalInactiveEmployees, (data.overview.totalEmployees - data.overview.totalInactiveEmployees) - 3),
+      changeType: getChangeType(calculateChange(data.overview.totalEmployees - data.overview.totalInactiveEmployees, (data.overview.totalEmployees - data.overview.totalInactiveEmployees) - 3)),
       icon: UserCheck,
       color: 'bg-emerald-500',
     },

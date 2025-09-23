@@ -27,8 +27,8 @@ router.get('/stats', async (req, res) => {
 
     // Get employees by department (if department field exists)
     const employeesByDepartment = await User.aggregate([
-      { $match: { department: { $exists: true, $ne: null } } },
-      { $group: { _id: '$department', count: { $sum: 1 } } },
+      { $match: { 'employment.department': { $exists: true, $ne: null } } },
+      { $group: { _id: '$employment.department', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
@@ -104,7 +104,7 @@ router.get('/departments', async (req, res) => {
     const departmentStats = await User.aggregate([
       {
         $group: {
-          _id: '$department',
+          _id: '$employment.department',
           count: { $sum: 1 },
           roles: { $addToSet: '$role' }
         }
