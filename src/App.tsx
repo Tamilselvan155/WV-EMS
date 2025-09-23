@@ -18,6 +18,8 @@ const MainApp: React.FC = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error'; isVisible: boolean }>({
     message: '',
     type: 'success',
@@ -116,12 +118,16 @@ const MainApp: React.FC = () => {
         onViewChange={setCurrentView}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        logoutModalOpen={logoutModalOpen}
+        isCollapsed={sidebarCollapsed}
+        onCollapseToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}`}>
         <Header 
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)} 
           onViewChange={setCurrentView}
+          onLogoutModalChange={setLogoutModalOpen}
         />
         
         <main className="flex-1 p-4 sm:p-6 overflow-x-hidden">

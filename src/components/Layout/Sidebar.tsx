@@ -4,12 +4,10 @@ import {
   UserPlus, 
   BarChart3, 
   Settings, 
-  LogOut,
   X,
   User
 } from 'lucide-react';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { logout } from '../../store/slices/authSlice';
+import { useAppSelector } from '../../store/hooks';
 import wvLogo from '../../assets/wvlogo.png';
 
 interface SidebarProps {
@@ -17,16 +15,21 @@ interface SidebarProps {
   onViewChange: (view: string) => void;
   isOpen: boolean;
   onToggle: (open: boolean) => void;
+  logoutModalOpen?: boolean;
+  isCollapsed?: boolean;
+  onCollapseToggle?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   currentView, 
   onViewChange, 
   isOpen, 
-  onToggle 
+  onToggle,
+  logoutModalOpen = false,
+  isCollapsed = false,
+  onCollapseToggle
 }) => {
-  const dispatch = useAppDispatch();
-  const { user, loading } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -41,10 +44,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     onToggle(false);
   };
 
-  const handleLogout = () => {
-    dispatch(logout());
-    onToggle(false);
-  };
 
   return (
     <>
@@ -58,9 +57,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar */}
       <div className={`
-        fixed top-0 left-0 h-screen w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50 flex flex-col
+        fixed top-0 left-0 h-screen bg-white shadow-lg transform transition-all duration-300 ease-in-out z-50 flex flex-col
         lg:translate-x-0 lg:shadow-none lg:border-r lg:border-gray-200
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${logoutModalOpen ? 'opacity-50 pointer-events-none' : 'opacity-100'}
+        ${isCollapsed ? 'w-16' : 'w-64'}
       `}>
         {/* Mobile Close Button */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 lg:hidden">
@@ -73,17 +74,21 @@ const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Logo/Brand */}
-        <div className="hidden lg:flex items-center p-6 border-b border-gray-200">
-          <div className="w-10 h-14 rounded-lg flex items-center justify-center mr-3">
-            <img src={wvLogo} alt="Worley Ventures Logo" className="w-full h-full" />
-            
-            {/* <Users className="w-5 h-5 text-white" /> */}
+        {/* Logo/Brand - Clickable Toggle */}
+        <div 
+          className="hidden lg:flex items-center p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors group"
+          onClick={onCollapseToggle}
+          title={isCollapsed ? 'Click to expand sidebar' : 'Click to collapse sidebar'}
+        >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+            <img src={wvLogo} alt="Worley Ventures Logo" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Worley Ventures</h1>
-            <p className="text-xs text-gray-500">Employee Management System</p>
-          </div>
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold text-gray-800 group-hover:text-gray-900 truncate">Worley Ventures</h1>
+              <p className="text-xs text-gray-500 group-hover:text-gray-600 truncate">Employee Management System</p>
+            </div>
+          )}
         </div>
 
         {/* Navigation Menu */}
@@ -103,10 +108,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                         ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600' 
                         : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                       }
+                      ${isCollapsed ? 'justify-center px-2' : ''}
                     `}
+                    title={isCollapsed ? item.label : ''}
                   >
-                    <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
-                    <span className="font-medium">{item.label}</span>
+                    <Icon className={`w-5 h-5 ${isCollapsed ? '' : 'mr-3'} ${isActive ? 'text-blue-600' : 'text-gray-500'} flex-shrink-0`} />
+                    {!isCollapsed && <span className="font-medium">{item.label}</span>}
                   </button>
                 </li>
               );
@@ -116,18 +123,20 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* User Info & Logout */}
         <div className="border-t border-gray-200 p-4">
-          <div className="flex items-center mb-0">
-            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+          <div className={`flex items-center mb-0 ${isCollapsed ? 'justify-center' : ''}`}>
+            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
               <User className="w-5 h-5 text-gray-600" />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'}
-              </p>
-              <p className="text-xs text-gray-500 truncate">
-                {user?.role || 'Employee'}
-              </p>
-            </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user?.role || 'Employee'}
+                </p>
+              </div>
+            )}
           </div>
           
           {/* <button
