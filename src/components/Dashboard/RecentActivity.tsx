@@ -36,7 +36,7 @@ const RecentActivity: React.FC = () => {
   };
 
   // Create activities from live data with detailed information
-  const activities = data?.recentActivity?.slice(0, 6).map((activity) => ({
+  const activities = data?.recentActivity?.slice(0, 3).map((activity) => ({
     icon: UserPlus,
     title: `${activity.name} - ${activity.employeeId}`,
     description: `${getRoleDisplayName(activity.role)} • ${activity.department} • ${activity.designation}`,

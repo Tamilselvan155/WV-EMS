@@ -192,9 +192,328 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
     }));
   };
 
+  // Comprehensive validation function for edit form
+  const validateEditFormData = () => {
+    const errors: string[] = [];
+
+    // Personal Information Validation
+    if (!editFormData.personal?.firstName?.trim()) {
+      errors.push('First Name is required');
+    } else if (editFormData.personal.firstName.trim().length < 2) {
+      errors.push('First Name must be at least 2 characters long');
+    } else if (editFormData.personal.firstName.trim().length > 50) {
+      errors.push('First Name cannot exceed 50 characters');
+    } else if (!/^[a-zA-Z\s]+$/.test(editFormData.personal.firstName.trim())) {
+      errors.push('First Name can only contain letters and spaces');
+    }
+
+    if (!editFormData.personal?.lastName?.trim()) {
+      errors.push('Last Name is required');
+    } else if (editFormData.personal.lastName.trim().length < 1) {
+      errors.push('Last Name cannot be empty');
+    } else if (editFormData.personal.lastName.trim().length > 50) {
+      errors.push('Last Name cannot exceed 50 characters');
+    } else if (!/^[a-zA-Z\s]+$/.test(editFormData.personal.lastName.trim())) {
+      errors.push('Last Name can only contain letters and spaces');
+    }
+
+    if (!editFormData.personal?.employeeId?.trim()) {
+      errors.push('Employee ID is required');
+    } else if (editFormData.personal.employeeId.trim().length < 3) {
+      errors.push('Employee ID must be at least 3 characters long');
+    } else if (editFormData.personal.employeeId.trim().length > 20) {
+      errors.push('Employee ID cannot exceed 20 characters');
+    } else if (!/^[A-Z0-9]+$/.test(editFormData.personal.employeeId.trim())) {
+      errors.push('Employee ID can only contain uppercase letters and numbers');
+    }
+
+    if (!editFormData.personal?.accessCardNumber?.trim()) {
+      errors.push('Access Card Number is required');
+    } else if (editFormData.personal.accessCardNumber.trim().length < 3) {
+      errors.push('Access Card Number must be at least 3 characters long');
+    } else if (editFormData.personal.accessCardNumber.trim().length > 20) {
+      errors.push('Access Card Number cannot exceed 20 characters');
+    } else if (!/^[A-Z0-9]+$/.test(editFormData.personal.accessCardNumber.trim())) {
+      errors.push('Access Card Number can only contain uppercase letters and numbers');
+    }
+
+    if (editFormData.personal?.dob) {
+      const dob = new Date(editFormData.personal.dob);
+      const today = new Date();
+      const age = today.getFullYear() - dob.getFullYear();
+      
+      if (dob > today) {
+        errors.push('Date of Birth cannot be in the future');
+      } else if (age < 18) {
+        errors.push('Employee must be at least 18 years old');
+      } else if (age > 100) {
+        errors.push('Please enter a valid Date of Birth');
+      }
+    }
+
+    // Contact Information Validation
+    if (!editFormData.contact?.email?.trim()) {
+      errors.push('Email Address is required');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFormData.contact.email.trim())) {
+      errors.push('Please enter a valid email address');
+    } else if (editFormData.contact.email.trim().length > 100) {
+      errors.push('Email address cannot exceed 100 characters');
+    }
+
+    if (!editFormData.contact?.phone?.trim()) {
+      errors.push('Phone Number is required');
+    } else if (!/^[0-9+\-\s()]+$/.test(editFormData.contact.phone.trim())) {
+      errors.push('Phone Number can only contain numbers, spaces, +, -, and parentheses');
+    } else if (editFormData.contact.phone.replace(/[^0-9]/g, '').length < 10) {
+      errors.push('Phone Number must have at least 10 digits');
+    } else if (editFormData.contact.phone.replace(/[^0-9]/g, '').length > 15) {
+      errors.push('Phone Number cannot exceed 15 digits');
+    }
+
+    if (editFormData.contact?.alternatePhone?.trim()) {
+      if (!/^[0-9+\-\s()]+$/.test(editFormData.contact.alternatePhone.trim())) {
+        errors.push('Alternate Phone Number can only contain numbers, spaces, +, -, and parentheses');
+      } else if (editFormData.contact.alternatePhone.replace(/[^0-9]/g, '').length < 10) {
+        errors.push('Alternate Phone Number must have at least 10 digits');
+      } else if (editFormData.contact.alternatePhone.replace(/[^0-9]/g, '').length > 15) {
+        errors.push('Alternate Phone Number cannot exceed 15 digits');
+      }
+    }
+
+    if (!editFormData.contact?.address?.current?.trim()) {
+      errors.push('Current Address is required');
+    } else if (editFormData.contact.address.current.trim().length < 10) {
+      errors.push('Current Address must be at least 10 characters long');
+    } else if (editFormData.contact.address.current.trim().length > 500) {
+      errors.push('Current Address cannot exceed 500 characters');
+    }
+
+    if (editFormData.contact?.address?.permanent?.trim()) {
+      if (editFormData.contact.address.permanent.trim().length < 10) {
+        errors.push('Permanent Address must be at least 10 characters long');
+      } else if (editFormData.contact.address.permanent.trim().length > 500) {
+        errors.push('Permanent Address cannot exceed 500 characters');
+      }
+    }
+
+    // Emergency Contact Validation
+    if (!editFormData.contact?.emergencyContact?.name?.trim()) {
+      errors.push('Emergency Contact Name is required');
+    } else if (editFormData.contact.emergencyContact.name.trim().length < 2) {
+      errors.push('Emergency Contact Name must be at least 2 characters long');
+    } else if (editFormData.contact.emergencyContact.name.trim().length > 100) {
+      errors.push('Emergency Contact Name cannot exceed 100 characters');
+    } else if (!/^[a-zA-Z\s]+$/.test(editFormData.contact.emergencyContact.name.trim())) {
+      errors.push('Emergency Contact Name can only contain letters and spaces');
+    }
+
+    if (!editFormData.contact?.emergencyContact?.relation?.trim()) {
+      errors.push('Emergency Contact Relation is required');
+    } else if (editFormData.contact.emergencyContact.relation.trim().length < 2) {
+      errors.push('Emergency Contact Relation must be at least 2 characters long');
+    } else if (editFormData.contact.emergencyContact.relation.trim().length > 50) {
+      errors.push('Emergency Contact Relation cannot exceed 50 characters');
+    }
+
+    if (!editFormData.contact?.emergencyContact?.phone?.trim()) {
+      errors.push('Emergency Contact Phone Number is required');
+    } else if (!/^[0-9+\-\s()]+$/.test(editFormData.contact.emergencyContact.phone.trim())) {
+      errors.push('Emergency Contact Phone Number can only contain numbers, spaces, +, -, and parentheses');
+    } else if (editFormData.contact.emergencyContact.phone.replace(/[^0-9]/g, '').length < 10) {
+      errors.push('Emergency Contact Phone Number must have at least 10 digits');
+    } else if (editFormData.contact.emergencyContact.phone.replace(/[^0-9]/g, '').length > 15) {
+      errors.push('Emergency Contact Phone Number cannot exceed 15 digits');
+    }
+
+    // Employment Information Validation
+    if (!editFormData.employment?.department?.trim()) {
+      errors.push('Department is required');
+    } else if (editFormData.employment.department.trim().length < 2) {
+      errors.push('Department must be at least 2 characters long');
+    } else if (editFormData.employment.department.trim().length > 100) {
+      errors.push('Department cannot exceed 100 characters');
+    }
+
+    if (!editFormData.employment?.designation?.trim()) {
+      errors.push('Designation is required');
+    } else if (editFormData.employment.designation.trim().length < 2) {
+      errors.push('Designation must be at least 2 characters long');
+    } else if (editFormData.employment.designation.trim().length > 100) {
+      errors.push('Designation cannot exceed 100 characters');
+    }
+
+    if (!editFormData.employment?.joiningDate) {
+      errors.push('Joining Date is required');
+    } else {
+      const joiningDate = new Date(editFormData.employment.joiningDate);
+      const today = new Date();
+      
+      if (joiningDate > today) {
+        errors.push('Joining Date cannot be in the future');
+      } else if (joiningDate < new Date('1900-01-01')) {
+        errors.push('Please enter a valid Joining Date');
+      }
+    }
+
+    // Statutory Information Validation
+    if (!editFormData.statutory?.pan?.trim()) {
+      errors.push('PAN Number is required');
+    } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(editFormData.statutory.pan.trim())) {
+      errors.push('PAN Number must be in format: AAAAA9999A (5 letters, 4 numbers, 1 letter)');
+    }
+
+    if (!editFormData.statutory?.aadhaar?.trim()) {
+      errors.push('Aadhaar Number is required');
+    } else if (!/^[0-9]{12}$/.test(editFormData.statutory.aadhaar.trim())) {
+      errors.push('Aadhaar Number must be exactly 12 digits');
+    }
+
+    if (editFormData.statutory?.uan?.trim()) {
+      if (!/^[0-9]{12}$/.test(editFormData.statutory.uan.trim())) {
+        errors.push('UAN Number must be exactly 12 digits');
+      }
+    }
+
+    if (editFormData.statutory?.esic?.trim()) {
+      if (!/^[0-9]{10}$/.test(editFormData.statutory.esic.trim())) {
+        errors.push('ESIC Number must be exactly 10 digits');
+      }
+    }
+
+    // Banking Details Validation
+    if (!editFormData.bank?.accountNumber?.trim()) {
+      errors.push('Account Number is required');
+    } else if (!/^[0-9]{9,18}$/.test(editFormData.bank.accountNumber.trim())) {
+      errors.push('Account Number must be between 9 and 18 digits');
+    }
+
+    if (!editFormData.bank?.ifsc?.trim()) {
+      errors.push('IFSC Code is required');
+    } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(editFormData.bank.ifsc.trim())) {
+      errors.push('IFSC Code must be in format: AAAA0XXXXXX (4 letters, 0, 6 alphanumeric)');
+    }
+
+    if (!editFormData.bank?.bankName?.trim()) {
+      errors.push('Bank Name is required');
+    } else if (editFormData.bank.bankName.trim().length < 2) {
+      errors.push('Bank Name must be at least 2 characters long');
+    } else if (editFormData.bank.bankName.trim().length > 100) {
+      errors.push('Bank Name cannot exceed 100 characters');
+    }
+
+    if (!editFormData.bank?.branch?.trim()) {
+      errors.push('Branch is required');
+    } else if (editFormData.bank.branch.trim().length < 2) {
+      errors.push('Branch must be at least 2 characters long');
+    } else if (editFormData.bank.branch.trim().length > 100) {
+      errors.push('Branch cannot exceed 100 characters');
+    }
+
+    // Education Validation
+    if (editFormData.education && editFormData.education.length > 0) {
+      editFormData.education.forEach((edu, index) => {
+        if (!edu.institution?.trim()) {
+          errors.push(`Education ${index + 1}: Institution is required`);
+        } else if (edu.institution.trim().length < 2) {
+          errors.push(`Education ${index + 1}: Institution must be at least 2 characters long`);
+        }
+
+        if (!edu.year || edu.year < 1950 || edu.year > new Date().getFullYear()) {
+          errors.push(`Education ${index + 1}: Please enter a valid year`);
+        }
+
+        if (edu.percentage < 0 || edu.percentage > 100) {
+          errors.push(`Education ${index + 1}: Percentage must be between 0 and 100`);
+        }
+      });
+    }
+
+    // Experience Validation
+    if (editFormData.experience && editFormData.experience.length > 0) {
+      editFormData.experience.forEach((exp, index) => {
+        if (!exp.company?.trim()) {
+          errors.push(`Experience ${index + 1}: Company is required`);
+        } else if (exp.company.trim().length < 2) {
+          errors.push(`Experience ${index + 1}: Company must be at least 2 characters long`);
+        }
+
+        if (!exp.designation?.trim()) {
+          errors.push(`Experience ${index + 1}: Designation is required`);
+        } else if (exp.designation.trim().length < 2) {
+          errors.push(`Experience ${index + 1}: Designation must be at least 2 characters long`);
+        }
+
+        if (!exp.department?.trim()) {
+          errors.push(`Experience ${index + 1}: Department is required`);
+        } else if (exp.department.trim().length < 2) {
+          errors.push(`Experience ${index + 1}: Department must be at least 2 characters long`);
+        }
+
+        if (!exp.from) {
+          errors.push(`Experience ${index + 1}: From Date is required`);
+        } else {
+          const fromDate = new Date(exp.from);
+          const today = new Date();
+          
+          if (fromDate > today) {
+            errors.push(`Experience ${index + 1}: From Date cannot be in the future`);
+          }
+        }
+
+        if (!exp.current && exp.to) {
+          const fromDate = new Date(exp.from);
+          const toDate = new Date(exp.to);
+          
+          if (toDate <= fromDate) {
+            errors.push(`Experience ${index + 1}: To Date must be after From Date`);
+          }
+          if (toDate > new Date()) {
+            errors.push(`Experience ${index + 1}: To Date cannot be in the future`);
+          }
+        }
+      });
+    }
+
+    // Document Validation - Document Link is optional
+    if (editFormData.documents?.driveLink?.trim() && !/^https?:\/\/.+/.test(editFormData.documents.driveLink.trim())) {
+      errors.push('Please enter a valid URL');
+    }
+
+    return errors;
+  };
+
   const confirmEdit = async () => {
     if (editModal.employee && editFormData) {
       try {
+        // Comprehensive validation
+        const validationErrors = validateEditFormData();
+        if (validationErrors.length > 0) {
+          alert(`Validation Error: ${validationErrors.join(', ')}`);
+          return;
+        }
+
+        const currentEmployeeId = editModal.employee._id;
+        // Check for duplicate Employee ID and Access Card Number (excluding current employee)
+        const existingEmployees = await dispatch(fetchEmployees({ page: 1, limit: 1000 })).unwrap();
+        const duplicateEmployeeId = existingEmployees.employees.find((emp: Employee) => 
+          emp.personal?.employeeId === editFormData.personal?.employeeId && 
+          emp._id !== currentEmployeeId
+        );
+        const duplicateAccessCard = existingEmployees.employees.find((emp: Employee) => 
+          emp.personal?.accessCardNumber === editFormData.personal?.accessCardNumber && 
+          emp._id !== currentEmployeeId
+        );
+
+        if (duplicateEmployeeId) {
+          alert('Employee ID already exists. Please use a different Employee ID.');
+          return;
+        }
+
+        if (duplicateAccessCard) {
+          alert('Access Card Number already exists. Please use a different Access Card Number.');
+          return;
+        }
+
         // Format document URLs before updating
         const formattedData = formatEmployeeDocumentUrls(editFormData);
         console.log('EmployeeList: Updating employee with data:', formattedData);
@@ -206,8 +525,26 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
         setEditModal({ isOpen: false, employee: null });
         setEditFormData({});
         // No need to refresh - Redux state is already updated by updateEmployee.fulfilled
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to update employee:', error);
+        
+        // Handle different types of errors
+        let errorMessage = 'Failed to update employee. Please try again.';
+        
+        if (error.message) {
+          errorMessage = error.message;
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response?.data?.errors) {
+          // Handle validation errors from backend
+          const validationErrors = Array.isArray(error.response.data.errors) 
+            ? error.response.data.errors.join(', ')
+            : error.response.data.errors;
+          errorMessage = `Validation Error: ${validationErrors}`;
+        }
+        
+        // You could add a toast notification here if you have one
+        alert(errorMessage);
       }
     }
   };
@@ -1470,38 +1807,37 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Google Drive Link *
-                      {editFormData.documents?.driveLink && (
-                        <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                      )}
-                    </label>
-                    <input
-                      type="url"
-                      value={editFormData.documents?.driveLink || ''}
-                      onChange={(e) => handleNestedEditFormChange('documents', 'driveLink', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                        editFormData.documents?.driveLink 
-                          ? 'border-green-300 bg-green-50' 
-                          : 'border-gray-300'
-                      }`}
-                      placeholder="https://drive.google.com/drive/folders/..."
-                      required
-                    />
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Document Link (Optional)
+                        {editFormData.documents?.driveLink && (
+                          <span className="ml-2 text-green-600 text-xs">✓ Added</span>
+                        )}
+                      </label>
+                      <input
+                        type="url"
+                        value={editFormData.documents?.driveLink || ''}
+                        onChange={(e) => handleNestedEditFormChange('documents', 'driveLink', e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          editFormData.documents?.driveLink 
+                            ? 'border-green-300 bg-green-50' 
+                            : 'border-gray-300'
+                        }`}
+                        placeholder="https://drive.google.com/drive/folders/... or any document link"
+                      />
                     <p className="text-xs text-gray-500 mt-1">
-                      Share the Google Drive folder link with "Anyone with the link can view" permission
+                      Add any document link (Google Drive, Dropbox, OneDrive, etc.) or leave empty
                     </p>
                     {editFormData.documents?.driveLink && (
                       <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-green-700 font-medium">📁 Document Folder ✓ Ready</p>
+                          <p className="text-sm text-green-700 font-medium">📁 Document Link ✓ Added</p>
                           <a 
                             href={editFormData.documents.driveLink.startsWith('http') ? editFormData.documents.driveLink : `https://${editFormData.documents.driveLink}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
                           >
-                            Open Drive Folder →
+                            Open Link →
                           </a>
                         </div>
                         <p className="text-xs text-gray-600 break-all mt-1">{editFormData.documents.driveLink}</p>
@@ -1975,9 +2311,9 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Google Drive Link
+                      Document Link
                       {viewModal.employee.documents?.driveLink && (
-                        <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
+                        <span className="ml-2 text-green-600 text-xs">✓ Added</span>
                       )}
                     </label>
                     <div className={`px-3 py-2 border rounded-lg text-gray-900 ${
@@ -1988,20 +2324,20 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                       {viewModal.employee.documents?.driveLink ? (
                         <div>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-green-700 font-medium">📁 Document Folder ✓ Ready</span>
+                            <span className="text-sm text-green-700 font-medium">📁 Document Link ✓ Added</span>
                             <a 
                               href={viewModal.employee.documents.driveLink.startsWith('http') ? viewModal.employee.documents.driveLink : `https://${viewModal.employee.documents.driveLink}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-blue-600 hover:text-blue-800 underline font-medium"
                             >
-                              Open Drive Folder →
+                              Open Link →
                             </a>
                           </div>
                           <p className="text-xs text-gray-600 break-all mt-1">{viewModal.employee.documents.driveLink}</p>
                         </div>
                       ) : (
-                        <span className="text-gray-500">Not uploaded</span>
+                        <span className="text-gray-500">No link provided</span>
                       )}
                     </div>
                   </div>
