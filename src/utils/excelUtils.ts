@@ -25,12 +25,9 @@ export const exportToExcel = (employees: Employee[], filename: string = 'employe
     'Designation': employee.employment?.designation || '',
     'Joining Date': employee.employment?.joiningDate || '',
     'Employment Type': employee.employment?.employmentType || '',
-    'Salary': employee.employment?.salary || '',
-    'Reporting Manager': employee.employment?.reportingManager || '',
     'Status': employee.employment?.status || '',
     'PAN': employee.statutory?.pan || '',
     'Aadhaar': employee.statutory?.aadhaar || '',
-    'Passport': employee.statutory?.passport || '',
     'UAN': employee.statutory?.uan || '',
     'ESIC': employee.statutory?.esic || '',
     'Bank Account Number': employee.bank?.accountNumber || '',
@@ -160,14 +157,11 @@ export const importFromExcel = (file: File): Promise<Employee[]> => {
             designation: row['Designation'] || '',
             joiningDate: row['Joining Date'] || '',
             employmentType: row['Employment Type'] || 'fulltime',
-            salary: row['Salary'] || 0,
-            reportingManager: row['Reporting Manager'] || '',
             status: row['Status'] || 'active'
           },
           statutory: {
             pan: row['PAN'] || '',
             aadhaar: row['Aadhaar'] || '',
-            passport: row['Passport'] || '',
             uan: row['UAN'] || '',
             esic: row['ESIC'] || ''
           },

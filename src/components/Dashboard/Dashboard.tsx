@@ -132,65 +132,76 @@ const Dashboard: React.FC<DashboardProps> = ({ onViewChange }) => {
         </div>
       </div>
 
-      {/* Additional Dashboard Sections */}
-      {data && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Department Overview */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Departments</h3>
-            <div className="space-y-3">
-              {data.employeesByDepartment?.slice(0, 5).map((dept, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{dept.department || 'Unassigned'}</span>
-                  <span className="text-sm font-medium text-gray-900">{dept.employeeCount}</span>
-                </div>
-              )) || (
-                <p className="text-sm text-gray-500">No department data available</p>
-              )}
-            </div>
+      {/* Recently Added Employees - Detailed View */}
+      {data && data.recentActivity && data.recentActivity.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Recently Added Employees</h3>
+            <span className="text-sm text-gray-500">Last {data.recentActivity.length} additions</span>
           </div>
-
-          {/* System Status */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Database</span>
-                <span className="text-sm font-medium text-green-600">Connected</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">API Status</span>
-                <span className="text-sm font-medium text-green-600">Online</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Last Updated</span>
-                <span className="text-sm font-medium text-gray-900">
-                  {data ? new Date().toLocaleTimeString() : 'N/A'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Admins</span>
-                <span className="text-sm font-medium text-gray-900">{data.overview.totalAdmins}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Managers</span>
-                <span className="text-sm font-medium text-gray-900">{data.overview.totalManagers}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Employees</span>
-                <span className="text-sm font-medium text-gray-900">{data.overview.totalRegularEmployees}</span>
-              </div>
-            </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                  <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Role & Department</th>
+                  <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                  <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Joining Date</th>
+                  <th className="text-left py-3 px-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Added</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {data.recentActivity.slice(0, 5).map((employee, index) => (
+                  <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-4 px-2">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <UserPlus className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                          <div className="text-xs text-gray-500">ID: {employee.employeeId}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-2">
+                      <div className="text-sm text-gray-900">{employee.designation}</div>
+                      <div className="text-xs text-gray-500">{employee.department}</div>
+                    </td>
+                    <td className="py-4 px-2">
+                      <div className="text-sm text-gray-900">{employee.email}</div>
+                      <div className="text-xs text-gray-500">{employee.phone}</div>
+                    </td>
+                    <td className="py-4 px-2">
+                      <div className="text-sm text-gray-900">
+                        {new Date(employee.joiningDate).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="py-4 px-2">
+                      <div className="text-sm text-gray-500">
+                        {new Date(employee.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {(() => {
+                          const date = new Date(employee.createdAt);
+                          const now = new Date();
+                          const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+                          if (diffInSeconds < 60) return 'Just now';
+                          if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+                          if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+                          return `${Math.floor(diffInSeconds / 86400)}d ago`;
+                        })()}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
+
     </div>
   );
 };

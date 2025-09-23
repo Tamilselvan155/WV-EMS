@@ -35,8 +35,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, onViewChange }) => {
           </button>
           
           <div className="hidden sm:block">
-            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Worley Ventures HR</h1>
-            <p className="text-sm text-gray-500 hidden md:block">Employee Management System</p>
+            <h1 className="text-xl lg:text-2xl font-bold text-gray-900">Manage Employees with Ease</h1>
+            <p className="text-sm text-gray-500 hidden md:block">Streamlined Employee Management</p>
           </div>
           
           <div className="sm:hidden">
@@ -46,13 +46,13 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, onViewChange }) => {
 
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Notifications */}
-          <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative">
+          {/* <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative">
             <Bell className="w-5 h-5" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-          </button>
+          </button> */}
 
           {/* User info - hidden on mobile */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* <div className="hidden md:flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
               <User className="w-4 h-4 text-white" />
             </div>
@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle, onViewChange }) => {
               </p>
               <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
             </div>
-          </div>
+          </div> */}
 
           <div className="flex items-center space-x-1 sm:space-x-2">
             {user?.role === 'admin' && (

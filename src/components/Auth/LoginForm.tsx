@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { login, clearError } from '../../store/slices/authSlice';
+import wvLogo from '../../assets/wvlogo.png';
 
 const LoginForm: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -28,8 +29,9 @@ const LoginForm: React.FC = () => {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+               <img src={wvLogo} alt="Worley Ventures Logo" className="w-full h-full" />
+              {/* <User className="w-8 h-8 text-white" /> */}
             </div>
             <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
             <p className="text-gray-500 mt-2">Sign in to your Worley Ventures HR account</p>
@@ -111,7 +113,7 @@ const LoginForm: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          {/* <div className="mt-8 pt-6 border-t border-gray-200">
             <div className="text-sm text-gray-600">
               <p className="mb-2"><strong>Test Accounts:</strong></p>
               <div className="bg-gray-50 p-3 rounded-lg space-y-1">
@@ -121,7 +123,7 @@ const LoginForm: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-2">Password: <code className="bg-gray-200 px-1 rounded">password</code> (for all accounts)</p>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

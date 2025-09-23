@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ArrowLeft, ArrowRight, Save, Upload, X, Plus, Trash2, User, Mail, Briefcase, GraduationCap, Clock, FileText, Upload as UploadIcon, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Plus, Trash2, User, Mail, Briefcase, GraduationCap, Clock, FileText, Upload as UploadIcon, Check } from 'lucide-react';
 import { Employee } from '../../types';
 import { createEmployee, fetchEmployees } from '../../store/slices/employeeSlice';
 import { RootState, AppDispatch } from '../../store';
 import Toast from '../UI/Toast';
+import { formatEmployeeDocumentUrls } from '../../utils/urlUtils';
 
 interface AddEmployeeFormProps {
   onBack?: () => void;
@@ -12,7 +13,7 @@ interface AddEmployeeFormProps {
 
 const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.employees);
+  const { loading } = useSelector((state: RootState) => state.employees);
   
   const [currentStep, setCurrentStep] = useState(0);
   const [showToast, setShowToast] = useState(false);
@@ -23,6 +24,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
       firstName: '',
       lastName: '',
       employeeId: '',
+      accessCardNumber: '',
       dob: '',
       gender: 'male',
       bloodGroup: '',
@@ -45,7 +47,6 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
     statutory: {
       pan: '',
       aadhaar: '',
-      passport: '',
       uan: '',
       esic: '',
     },
@@ -63,18 +64,10 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
       designation: '',
       joiningDate: '',
       employmentType: 'fulltime',
-      salary: 0,
-      reportingManager: '',
       status: 'active',
     },
     documents: {
-      aadhaarUrl: '',
-      panUrl: '',
-      passportUrl: '',
-      resumeUrl: '',
-      offerLetterUrl: '',
-      educationDocs: [],
-      otherDocs: [],
+      driveLink: '',
     },
   });
 
@@ -134,7 +127,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
     setFormData(prev => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof Employee],
+        ...(prev[section as keyof Employee] as any),
         [field]: value,
       },
     }));
@@ -144,9 +137,9 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
     setFormData(prev => ({
       ...prev,
       [section]: {
-        ...prev[section as keyof Employee],
+        ...(prev[section as keyof Employee] as any),
         [nestedSection]: {
-          ...(prev[section as keyof Employee] as any)[nestedSection],
+          ...((prev[section as keyof Employee] as any)[nestedSection] || {}),
           [field]: value,
         },
       },
@@ -239,31 +232,57 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
   const handleSubmit = async () => {
     try {
       // Basic validation
-      if (!formData.personal.firstName || !formData.personal.lastName || !formData.contact.email) {
-        setToastMessage('Please fill in all required fields');
+      if (!formData.personal.firstName || !formData.personal.lastName || !formData.personal.employeeId || !formData.personal.accessCardNumber || !formData.contact.email) {
+        setToastMessage('Please fill in all required fields (First Name, Last Name, Employee ID, Access Card Number, Email)');
         setToastType('error');
         setShowToast(true);
         return;
       }
 
       // Document validation
-      if (!formData.documents.aadhaarUrl || !formData.documents.panUrl || !formData.documents.resumeUrl || !formData.documents.offerLetterUrl) {
-        setToastMessage('Please provide all required documents (Aadhaar, PAN, Resume, Offer Letter)');
+      if (!formData.documents.driveLink) {
+        setToastMessage('Please provide the Google Drive link with all required documents');
         setToastType('error');
         setShowToast(true);
         return;
       }
 
-      // Education documents validation
-      if (!formData.documents.educationDocs || formData.documents.educationDocs.length === 0 || formData.documents.educationDocs.every(doc => !doc.trim())) {
-        setToastMessage('Please provide at least one education document');
+      // Employment validation
+      if (!formData.employment.department || !formData.employment.designation || !formData.employment.joiningDate) {
+        setToastMessage('Please fill in all required employment fields (Department, Designation, Joining Date)');
         setToastType('error');
         setShowToast(true);
         return;
       }
 
-      console.log('AddEmployeeForm: Submitting employee data:', formData);
-      const result = await dispatch(createEmployee(formData)).unwrap();
+      // Contact validation
+      if (!formData.contact.phone) {
+        setToastMessage('Please provide a phone number');
+        setToastType('error');
+        setShowToast(true);
+        return;
+      }
+
+      // Convert string dates to Date objects and format URLs
+      const processedData = formatEmployeeDocumentUrls({
+        ...formData,
+        personal: {
+          ...formData.personal,
+          dob: formData.personal.dob ? new Date(formData.personal.dob) : undefined,
+        },
+        employment: {
+          ...formData.employment,
+          joiningDate: new Date(formData.employment.joiningDate),
+        },
+        experience: formData.experience.map(exp => ({
+          ...exp,
+          from: exp.from ? new Date(exp.from) : undefined,
+          to: exp.to ? new Date(exp.to) : undefined,
+        })),
+      });
+
+      console.log('AddEmployeeForm: Submitting employee data:', processedData);
+      const result = await dispatch(createEmployee(processedData)).unwrap();
       console.log('AddEmployeeForm: Employee created successfully:', result);
       setToastMessage('Employee created successfully!');
       setToastType('success');
@@ -278,6 +297,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
           firstName: '',
           lastName: '',
           employeeId: '',
+          accessCardNumber: '',
           dob: '',
           gender: 'male',
           bloodGroup: '',
@@ -300,7 +320,6 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
         statutory: {
           pan: '',
           aadhaar: '',
-          passport: '',
           uan: '',
           esic: '',
         },
@@ -318,18 +337,10 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
           designation: '',
           joiningDate: '',
           employmentType: 'fulltime',
-          salary: 0,
-          reportingManager: '',
           status: 'active',
         },
         documents: {
-          aadhaarUrl: '',
-          panUrl: '',
-          passportUrl: '',
-          resumeUrl: '',
-          offerLetterUrl: '',
-          educationDocs: [],
-          otherDocs: [],
+          driveLink: '',
         },
       });
       setCurrentStep(0);
@@ -342,7 +353,22 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
       }, 2000);
     } catch (error: any) {
       console.error('AddEmployeeForm: Error creating employee:', error);
-      const errorMessage = error.message || 'Failed to create employee. Please try again.';
+      
+      // Handle different types of errors
+      let errorMessage = 'Failed to create employee. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.errors) {
+        // Handle validation errors from backend
+        const validationErrors = Array.isArray(error.response.data.errors) 
+          ? error.response.data.errors.join(', ')
+          : error.response.data.errors;
+        errorMessage = `Validation Error: ${validationErrors}`;
+      }
+      
       setToastMessage(errorMessage);
       setToastType('error');
       setShowToast(true);
@@ -383,6 +409,17 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
                   value={formData.personal.employeeId}
                   onChange={(e) => handleInputChange('personal', 'employeeId', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Access Card Number*</label>
+                <input
+                  type="text"
+                  value={formData.personal.accessCardNumber}
+                  onChange={(e) => handleInputChange('personal', 'accessCardNumber', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., AC123456"
                   required
                 />
               </div>
@@ -570,25 +607,6 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
                   <option value="contract">Contract</option>
                   <option value="intern">Intern</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Salary*</label>
-                <input
-                  type="number"
-                  value={formData.employment.salary}
-                  onChange={(e) => handleInputChange('employment', 'salary', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Reporting Manager</label>
-                <input
-                  type="text"
-                  value={formData.employment.reportingManager || ''}
-                  onChange={(e) => handleInputChange('employment', 'reportingManager', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
               </div>
             </div>
           </div>
@@ -816,21 +834,22 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Passport Number</label>
-                <input
-                  type="text"
-                  value={formData.statutory.passport || ''}
-                  onChange={(e) => handleInputChange('statutory', 'passport', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">UAN Number</label>
                 <input
                   type="text"
                   value={formData.statutory.uan || ''}
                   onChange={(e) => handleInputChange('statutory', 'uan', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ESI Number</label>
+                <input
+                  type="text"
+                  value={formData.statutory.esic || ''}
+                  onChange={(e) => handleInputChange('statutory', 'esic', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., 12345678901234567890"
                 />
               </div>
             </div>
@@ -899,364 +918,67 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
         return (
           <div className="space-y-6">
             <h3 className="text-lg font-medium text-gray-900 mb-6">Document Links</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Aadhaar Card URL <span className="text-red-500">*</span>
-                  {formData.documents.aadhaarUrl && (
-                    <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                  )}
-                </label>
-                <input
-                  type="url"
-                  value={formData.documents.aadhaarUrl}
-                  onChange={(e) => handleInputChange('documents', 'aadhaarUrl', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formData.documents.aadhaarUrl 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="https://example.com/aadhaar.pdf"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Government ID proof (Required)</p>
-                {formData.documents.aadhaarUrl && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-xs text-green-700 font-medium">Document Preview:</p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">📁 Required Documents to Upload</h4>
+              <p className="text-xs text-blue-800 mb-3">Please upload all the following documents in a single Google Drive folder and share the link:</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-blue-700">
+                <div className="space-y-1">
+                  <div>• PAN Card</div>
+                  <div>• Aadhaar Card</div>
+                  <div>• Bank Proof</div>
+                  <div>• 10th Mark Sheet</div>
+                  <div>• 12th Mark Sheet</div>
+                  <div>• UG Degree & Convocation Mark Sheet</div>
+                  <div>• PG Degree & Convocation Mark Sheet</div>
+                </div>
+                <div className="space-y-1">
+                  <div>• Diploma Degree & Convocation Mark Sheet</div>
+                  <div>• Experience Letter</div>
+                  <div>• Relieving Letter</div>
+                  <div>• 3 Month Payslip</div>
+                  <div>• Worley Offer Letter</div>
+                  <div>• Passport Size Image</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Google Drive Link *
+                {formData.documents.driveLink && (
+                  <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
+                )}
+              </label>
+              <input
+                type="url"
+                value={formData.documents.driveLink || ''}
+                onChange={(e) => handleInputChange('documents', 'driveLink', e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  formData.documents.driveLink 
+                    ? 'border-green-300 bg-green-50' 
+                    : 'border-gray-300'
+                }`}
+                placeholder="https://drive.google.com/drive/folders/..."
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Share the Google Drive folder link with "Anyone with the link can view" permission
+              </p>
+              {formData.documents.driveLink && (
+                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-green-700 font-medium">📁 Document Folder ✓ Ready</p>
                     <a 
-                      href={formData.documents.aadhaarUrl} 
+                      href={formData.documents.driveLink.startsWith('http') ? formData.documents.driveLink : `https://${formData.documents.driveLink}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
+                      className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
                     >
-                      {formData.documents.aadhaarUrl}
+                      Open Drive Folder →
                     </a>
                   </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  PAN Card URL <span className="text-red-500">*</span>
-                  {formData.documents.panUrl && (
-                    <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                  )}
-                </label>
-                <input
-                  type="url"
-                  value={formData.documents.panUrl}
-                  onChange={(e) => handleInputChange('documents', 'panUrl', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formData.documents.panUrl 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="https://example.com/pan.pdf"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Tax identification document (Required)</p>
-                {formData.documents.panUrl && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                    <a 
-                      href={formData.documents.panUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                    >
-                      {formData.documents.panUrl}
-                    </a>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Resume/CV URL <span className="text-red-500">*</span>
-                  {formData.documents.resumeUrl && (
-                    <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                  )}
-                </label>
-                <input
-                  type="url"
-                  value={formData.documents.resumeUrl}
-                  onChange={(e) => handleInputChange('documents', 'resumeUrl', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formData.documents.resumeUrl 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="https://example.com/resume.pdf"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Professional background summary (Required)</p>
-                {formData.documents.resumeUrl && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                    <a 
-                      href={formData.documents.resumeUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                    >
-                      {formData.documents.resumeUrl}
-                    </a>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Offer Letter URL <span className="text-red-500">*</span>
-                  {formData.documents.offerLetterUrl && (
-                    <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                  )}
-                </label>
-                <input
-                  type="url"
-                  value={formData.documents.offerLetterUrl}
-                  onChange={(e) => handleInputChange('documents', 'offerLetterUrl', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formData.documents.offerLetterUrl 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="https://example.com/offer-letter.pdf"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">Employment contract (Required)</p>
-                {formData.documents.offerLetterUrl && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                    <a 
-                      href={formData.documents.offerLetterUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                    >
-                      {formData.documents.offerLetterUrl}
-                    </a>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Passport URL
-                  {formData.documents.passportUrl && (
-                    <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                  )}
-                </label>
-                <input
-                  type="url"
-                  value={formData.documents.passportUrl}
-                  onChange={(e) => handleInputChange('documents', 'passportUrl', e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formData.documents.passportUrl 
-                      ? 'border-green-300 bg-green-50' 
-                      : 'border-gray-300'
-                  }`}
-                  placeholder="https://example.com/passport.pdf"
-                />
-                <p className="text-xs text-gray-500 mt-1">International travel document (Optional)</p>
-                {formData.documents.passportUrl && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                    <a 
-                      href={formData.documents.passportUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                    >
-                      {formData.documents.passportUrl}
-                    </a>
-                  </div>
-                )}
-              </div>
-              </div>
-              
-            {/* Education Documents */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h5 className="text-md font-medium text-gray-900">Education Documents <span className="text-red-500">*</span></h5>
-                  <p className="text-xs text-gray-500">Upload all relevant educational certificates (10th, 12th, Graduation, etc.)</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData(prev => ({
-                      ...prev,
-                      documents: {
-                        ...prev.documents,
-                        educationDocs: [...prev.documents.educationDocs, '']
-                      }
-                    }));
-                  }}
-                  className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Document</span>
-                </button>
-              </div>
-              {formData.documents.educationDocs.length === 0 ? (
-                <div className="text-center py-4 text-gray-500 text-sm">
-                  No education documents added yet.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {formData.documents.educationDocs.map((doc, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="url"
-                          value={doc}
-                          onChange={(e) => {
-                            const newDocs = [...formData.documents.educationDocs];
-                            newDocs[index] = e.target.value;
-                            setFormData(prev => ({
-                              ...prev,
-                              documents: {
-                                ...prev.documents,
-                                educationDocs: newDocs
-                              }
-                            }));
-                          }}
-                          className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                            doc.trim() 
-                              ? 'border-green-300 bg-green-50' 
-                              : 'border-gray-300'
-                          }`}
-                          placeholder="https://example.com/education-doc.pdf"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newDocs = formData.documents.educationDocs.filter((_, i) => i !== index);
-                            setFormData(prev => ({
-                              ...prev,
-                              documents: {
-                                ...prev.documents,
-                                educationDocs: newDocs
-                              }
-                            }));
-                          }}
-                          className="text-red-600 hover:text-red-700 p-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                </button>
-                      </div>
-                      {doc.trim() && (
-                        <div className="ml-0 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs text-green-700 font-medium">
-                              Education Document {index + 1} ✓ Uploaded
-                            </p>
-                            <a 
-                              href={doc} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Document
-                            </a>
-                          </div>
-                          <p className="text-xs text-gray-600 break-all mt-1">{doc}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              </div>
-              
-            {/* Other Documents */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h5 className="text-md font-medium text-gray-900">Other Documents</h5>
-                  <p className="text-xs text-gray-500">Additional documents (Experience letters, Salary slips, Medical certificates, etc.)</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData(prev => ({
-                      ...prev,
-                      documents: {
-                        ...prev.documents,
-                        otherDocs: [...prev.documents.otherDocs, '']
-                      }
-                    }));
-                  }}
-                  className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Document</span>
-                </button>
-              </div>
-              {formData.documents.otherDocs.length === 0 ? (
-                <div className="text-center py-4 text-gray-500 text-sm">
-                  No other documents added yet.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {formData.documents.otherDocs.map((doc, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="url"
-                          value={doc}
-                          onChange={(e) => {
-                            const newDocs = [...formData.documents.otherDocs];
-                            newDocs[index] = e.target.value;
-                            setFormData(prev => ({
-                              ...prev,
-                              documents: {
-                                ...prev.documents,
-                                otherDocs: newDocs
-                              }
-                            }));
-                          }}
-                          className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                            doc.trim() 
-                              ? 'border-green-300 bg-green-50' 
-                              : 'border-gray-300'
-                          }`}
-                          placeholder="https://example.com/other-doc.pdf"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newDocs = formData.documents.otherDocs.filter((_, i) => i !== index);
-                            setFormData(prev => ({
-                              ...prev,
-                              documents: {
-                                ...prev.documents,
-                                otherDocs: newDocs
-                              }
-                            }));
-                          }}
-                          className="text-red-600 hover:text-red-700 p-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {doc.trim() && (
-                        <div className="ml-0 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs text-green-700 font-medium">
-                              Other Document {index + 1} ✓ Uploaded
-                            </p>
-                            <a 
-                              href={doc} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Document
-                            </a>
-                          </div>
-                          <p className="text-xs text-gray-600 break-all mt-1">{doc}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  <p className="text-xs text-gray-600 break-all mt-1">{formData.documents.driveLink}</p>
                 </div>
               )}
             </div>
@@ -1302,7 +1024,6 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
                 const Icon = step.icon;
                 const isCompleted = index < currentStep;
                 const isCurrent = index === currentStep;
-                const isUpcoming = index > currentStep;
                 
                 return (
                   <div key={step.id} className="flex items-center flex-shrink-0">
@@ -1496,6 +1217,7 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
         <Toast
           message={toastMessage}
           type={toastType}
+          isVisible={showToast}
           onClose={() => setShowToast(false)}
         />
       )}

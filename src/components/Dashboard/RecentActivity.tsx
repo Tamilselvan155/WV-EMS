@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { loadDashboardData } from '../../actions/dashboardActions';
-import { Calendar, FileText, Users, Award, UserPlus, Clock } from 'lucide-react';
+import { Users, UserPlus, Clock } from 'lucide-react';
 
 const RecentActivity: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -35,11 +35,18 @@ const RecentActivity: React.FC = () => {
     }
   };
 
-  // Create activities from live data
-  const activities = data?.recentActivity?.slice(0, 6).map((activity, index) => ({
+  // Create activities from live data with detailed information
+  const activities = data?.recentActivity?.slice(0, 6).map((activity) => ({
     icon: UserPlus,
-    title: 'New Employee Added',
-    description: `${activity.name} joined as ${getRoleDisplayName(activity.role)}`,
+    title: `${activity.name} - ${activity.employeeId}`,
+    description: `${getRoleDisplayName(activity.role)} • ${activity.department} • ${activity.designation}`,
+    // details: {
+    //   email: activity.email,
+    //   phone: activity.phone,
+    //   joiningDate: new Date(activity.joiningDate).toLocaleDateString(),
+    //   department: activity.department,
+    //   designation: activity.designation
+    // },
     time: getTimeAgo(activity.createdAt),
     color: 'bg-blue-100 text-blue-600',
   })) || [
@@ -47,6 +54,7 @@ const RecentActivity: React.FC = () => {
       icon: Users,
       title: 'No Recent Activity',
       description: 'No new employees added recently',
+      details: null,
       time: 'N/A',
       color: 'bg-gray-100 text-gray-600',
     },
@@ -83,14 +91,16 @@ const RecentActivity: React.FC = () => {
             const Icon = activity.icon;
             
             return (
-              <div key={index} className="flex items-start space-x-3 sm:space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className={`w-8 h-8 sm:w-10 sm:h-10 ${activity.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+              <div key={index} className="flex items-start space-x-3 sm:space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors group">
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 ${activity.color} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
                   <Icon className="w-5 h-5" />
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-medium text-gray-900 truncate">{activity.title}</h4>
                   <p className="text-sm text-gray-500 mt-1 line-clamp-2">{activity.description}</p>
+                  
+                  
                   <p className="text-xs text-gray-400 mt-2">{activity.time}</p>
                 </div>
               </div>

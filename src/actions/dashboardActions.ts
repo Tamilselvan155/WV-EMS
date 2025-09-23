@@ -6,6 +6,7 @@ export interface DashboardStats {
   totalAdmins: number;
   totalManagers: number;
   totalRegularEmployees: number;
+  totalInactiveEmployees: number;
   recentEmployees: number;
 }
 
@@ -20,6 +21,11 @@ export interface RecentActivity {
   name: string;
   email: string;
   role: string;
+  employeeId: string;
+  department: string;
+  designation: string;
+  phone: string;
+  joiningDate: string;
   createdAt: string;
 }
 

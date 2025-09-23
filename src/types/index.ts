@@ -16,6 +16,7 @@ export interface Employee {
     firstName: string;
     lastName: string;
     employeeId: string;
+    accessCardNumber: string;
     dob: string;
     gender: 'male' | 'female' | 'other';
     bloodGroup: string;
@@ -39,7 +40,6 @@ export interface Employee {
   statutory: {
     pan: string;
     aadhaar: string;
-    passport?: string;
     uan?: string;
     esic?: string;
   };
@@ -72,18 +72,10 @@ export interface Employee {
     designation: string;
     joiningDate: string;
     employmentType: 'fulltime' | 'parttime' | 'contract' | 'intern';
-    reportingManager?: string;
-    salary: number;
-    status: 'active' | 'inactive' | 'terminated';
+    status: 'active' | 'inactive';
   };
   documents: {
-    aadhaarUrl?: string;
-    panUrl?: string;
-    passportUrl?: string;
-    resumeUrl?: string;
-    offerLetterUrl?: string;
-    educationDocs?: string[];
-    otherDocs?: string[];
+    driveLink?: string;
   };
   createdAt?: string;
   updatedAt?: string;

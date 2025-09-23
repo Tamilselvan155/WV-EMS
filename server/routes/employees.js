@@ -15,7 +15,9 @@ router.get('/', async (req, res) => {
         { firstName: { $regex: search, $options: 'i' } },
         { lastName: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
-        { 'personal.employeeId': { $regex: search, $options: 'i' } }
+        { 'personal.employeeId': { $regex: search, $options: 'i' } },
+        { 'personal.accessCardNumber': { $regex: search, $options: 'i' } },
+        { 'statutory.esic': { $regex: search, $options: 'i' } }
       ];
     }
     if (role) {
@@ -101,7 +103,7 @@ router.post('/', async (req, res) => {
       education: employeeData.education || [],
       experience: employeeData.experience || [],
       employment: employeeData.employment,
-      documents: employeeData.documents || { educationDocs: [], otherDocs: [] },
+      documents: employeeData.documents || { driveLink: '' },
       role: 'employee' // Set default role
     };
     
@@ -147,6 +149,7 @@ router.post('/', async (req, res) => {
     // Handle validation errors
     if (error.name === 'ValidationError') {
       const validationErrors = Object.values(error.errors).map(err => err.message);
+      console.error('Validation errors:', validationErrors);
       return res.status(400).json({
         success: false,
         message: 'Validation Error',
@@ -162,6 +165,14 @@ router.post('/', async (req, res) => {
         message: `${field} already exists`
       });
     }
+    
+    console.error('Full error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      keyPattern: error.keyPattern
+    });
     
     res.status(500).json({
       success: false,

@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchEmployees, deleteEmployee, updateEmployee, createEmployee } from '../../store/slices/employeeSlice';
 import { Employee } from '../../types';
 import { exportToExcel, importFromExcel, downloadTemplate } from '../../utils/excelUtils';
+import { formatEmployeeDocumentUrls } from '../../utils/urlUtils';
 
 interface EmployeeListProps {
   onAddEmployee?: () => void;
@@ -65,10 +66,11 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
       page: 1,
       limit: 10,
       search: searchTerm || undefined,
-      role: selectedDepartment || undefined,
+      department: selectedDepartment || undefined,
+      status: selectedStatus || undefined,
     };
     dispatch(fetchEmployees(searchParams));
-  }, [dispatch, searchTerm, selectedDepartment]);
+  }, [dispatch, searchTerm, selectedDepartment, selectedStatus]);
 
   const departments = Array.from(new Set(employees.map(emp => emp.employment?.department || 'Unknown')));
   const statuses = Array.from(new Set(employees.map(emp => emp.employment?.status || 'Unknown')));
@@ -139,15 +141,12 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
         designation: employee.employment?.designation || '',
         joiningDate: employee.employment?.joiningDate ? (typeof employee.employment.joiningDate === 'string' ? employee.employment.joiningDate.split('T')[0] : new Date(employee.employment.joiningDate).toISOString().split('T')[0]) : '',
         employmentType: employee.employment?.employmentType || 'fulltime',
-        salary: typeof employee.employment?.salary === 'string' ? parseFloat(employee.employment.salary) || 0 : (employee.employment?.salary || 0),
-        reportingManager: employee.employment?.reportingManager || '',
         status: employee.employment?.status || 'active',
       },
       statutory: {
         ...employee.statutory,
         pan: employee.statutory?.pan || '',
         aadhaar: employee.statutory?.aadhaar || '',
-        passport: employee.statutory?.passport || '',
         uan: employee.statutory?.uan || '',
         esic: employee.statutory?.esic || '',
       },
@@ -162,13 +161,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
       education: employee.education || [],
       experience: employee.experience || [],
       documents: {
-        aadhaarUrl: employee.documents?.aadhaarUrl || '',
-        panUrl: employee.documents?.panUrl || '',
-        passportUrl: employee.documents?.passportUrl || '',
-        resumeUrl: employee.documents?.resumeUrl || '',
-        offerLetterUrl: employee.documents?.offerLetterUrl || '',
-        educationDocs: employee.documents?.educationDocs || [],
-        otherDocs: employee.documents?.otherDocs || [],
+        driveLink: employee.documents?.driveLink || '',
       },
     };
     
@@ -202,10 +195,12 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
   const confirmEdit = async () => {
     if (editModal.employee && editFormData) {
       try {
-        console.log('EmployeeList: Updating employee with data:', editFormData);
+        // Format document URLs before updating
+        const formattedData = formatEmployeeDocumentUrls(editFormData);
+        console.log('EmployeeList: Updating employee with data:', formattedData);
         await dispatch(updateEmployee({ 
           id: editModal.employee._id!, 
-          employeeData: editFormData 
+          employeeData: formattedData 
         })).unwrap();
         console.log('EmployeeList: Employee updated successfully');
         setEditModal({ isOpen: false, employee: null });
@@ -472,7 +467,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
       </div>
 
       {/* Results Count */}
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <p className="text-sm text-gray-600">
           Showing {employees.length} of {pagination.totalEmployees} employees
         </p>
@@ -480,7 +475,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
           <Download className="w-4 h-4 mr-1" />
           Export
         </button>
-      </div>
+      </div> */}
 
       {/* Loading State */}
       {loading && (
@@ -513,6 +508,12 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Department
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Access Card
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    ESI
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
@@ -549,6 +550,12 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{employee.employment?.department || 'N/A'}</div>
                       <div className="text-sm text-gray-500">{employee.employment?.designation || 'N/A'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{employee.personal?.accessCardNumber || 'N/A'}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{employee.statutory?.esic || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -866,6 +873,19 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Access Card Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.personal?.accessCardNumber || ''}
+                        onChange={(e) => handleNestedEditFormChange('personal', 'accessCardNumber', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., AC123456"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Date of Birth *
                       </label>
                       <input
@@ -1094,29 +1114,6 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Salary *
-                      </label>
-                      <input
-                        type="number"
-                        value={editFormData.employment?.salary || ''}
-                        onChange={(e) => handleNestedEditFormChange('employment', 'salary', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Reporting Manager
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.employment?.reportingManager || ''}
-                        onChange={(e) => handleNestedEditFormChange('employment', 'reportingManager', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Status *
                       </label>
                       <select
@@ -1126,7 +1123,6 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
-                        <option value="terminated">Terminated</option>
                       </select>
                     </div>
                   </div>
@@ -1158,17 +1154,6 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                         onChange={(e) => handleNestedEditFormChange('statutory', 'aadhaar', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Passport Number
-                      </label>
-                      <input
-                        type="text"
-                        value={editFormData.statutory?.passport || ''}
-                        onChange={(e) => handleNestedEditFormChange('statutory', 'passport', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                     <div>
@@ -1458,365 +1443,68 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
 
                 {/* Documents Section */}
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Documents</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Aadhaar Card URL <span className="text-red-500">*</span>
-                        {editFormData.documents?.aadhaarUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <input
-                        type="url"
-                        value={editFormData.documents?.aadhaarUrl || ''}
-                        onChange={(e) => handleNestedEditFormChange('documents', 'aadhaarUrl', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          editFormData.documents?.aadhaarUrl 
-                            ? 'border-green-300 bg-green-50' 
-                            : 'border-gray-300'
-                        }`}
-                        placeholder="https://example.com/aadhaar.pdf"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Government ID proof (Required)</p>
-                      {editFormData.documents?.aadhaarUrl && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                          <a 
-                            href={editFormData.documents.aadhaarUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                          >
-                            {editFormData.documents.aadhaarUrl}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        PAN Card URL <span className="text-red-500">*</span>
-                        {editFormData.documents?.panUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <input
-                        type="url"
-                        value={editFormData.documents?.panUrl || ''}
-                        onChange={(e) => handleNestedEditFormChange('documents', 'panUrl', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          editFormData.documents?.panUrl 
-                            ? 'border-green-300 bg-green-50' 
-                            : 'border-gray-300'
-                        }`}
-                        placeholder="https://example.com/pan.pdf"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Tax identification document (Required)</p>
-                      {editFormData.documents?.panUrl && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                          <a 
-                            href={editFormData.documents.panUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                          >
-                            {editFormData.documents.panUrl}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Passport URL
-                        {editFormData.documents?.passportUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <input
-                        type="url"
-                        value={editFormData.documents?.passportUrl || ''}
-                        onChange={(e) => handleNestedEditFormChange('documents', 'passportUrl', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          editFormData.documents?.passportUrl 
-                            ? 'border-green-300 bg-green-50' 
-                            : 'border-gray-300'
-                        }`}
-                        placeholder="https://example.com/passport.pdf"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">International travel document (Optional)</p>
-                      {editFormData.documents?.passportUrl && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                          <a 
-                            href={editFormData.documents.passportUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                          >
-                            {editFormData.documents.passportUrl}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Resume/CV URL <span className="text-red-500">*</span>
-                        {editFormData.documents?.resumeUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <input
-                        type="url"
-                        value={editFormData.documents?.resumeUrl || ''}
-                        onChange={(e) => handleNestedEditFormChange('documents', 'resumeUrl', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          editFormData.documents?.resumeUrl 
-                            ? 'border-green-300 bg-green-50' 
-                            : 'border-gray-300'
-                        }`}
-                        placeholder="https://example.com/resume.pdf"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Professional background summary (Required)</p>
-                      {editFormData.documents?.resumeUrl && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                          <a 
-                            href={editFormData.documents.resumeUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                          >
-                            {editFormData.documents.resumeUrl}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Offer Letter URL <span className="text-red-500">*</span>
-                        {editFormData.documents?.offerLetterUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <input
-                        type="url"
-                        value={editFormData.documents?.offerLetterUrl || ''}
-                        onChange={(e) => handleNestedEditFormChange('documents', 'offerLetterUrl', e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          editFormData.documents?.offerLetterUrl 
-                            ? 'border-green-300 bg-green-50' 
-                            : 'border-gray-300'
-                        }`}
-                        placeholder="https://example.com/offer-letter.pdf"
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Employment contract (Required)</p>
-                      {editFormData.documents?.offerLetterUrl && (
-                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-xs text-green-700 font-medium">Document Preview:</p>
-                          <a 
-                            href={editFormData.documents.offerLetterUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
-                          >
-                            {editFormData.documents.offerLetterUrl}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Document Links</h4>
                   
-                  {/* Education Documents */}
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h5 className="text-md font-medium text-gray-900">Education Documents <span className="text-red-500">*</span></h5>
-                        <p className="text-xs text-gray-500">Upload all relevant educational certificates (10th, 12th, Graduation, etc.)</p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h5 className="text-sm font-medium text-blue-900 mb-2">📁 Required Documents to Upload</h5>
+                    <p className="text-xs text-blue-800 mb-3">Please upload all the following documents in a single Google Drive folder and share the link:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-blue-700">
+                      <div className="space-y-1">
+                        <div>• PAN Card</div>
+                        <div>• Aadhaar Card</div>
+                        <div>• Bank Proof</div>
+                        <div>• 10th Mark Sheet</div>
+                        <div>• 12th Mark Sheet</div>
+                        <div>• UG Degree & Convocation Mark Sheet</div>
+                        <div>• PG Degree & Convocation Mark Sheet</div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditFormData(prev => ({
-                            ...prev,
-                            documents: {
-                              ...prev.documents,
-                              educationDocs: [...(prev.documents?.educationDocs || []), '']
-                            }
-                          }));
-                        }}
-                        className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Document</span>
-                      </button>
+                      <div className="space-y-1">
+                        <div>• Diploma Degree & Convocation Mark Sheet</div>
+                        <div>• Experience Letter</div>
+                        <div>• Relieving Letter</div>
+                        <div>• 3 Month Payslip</div>
+                        <div>• Worley Offer Letter</div>
+                        <div>• Passport Size Image</div>
+                      </div>
                     </div>
-                    {(!editFormData.documents?.educationDocs || editFormData.documents.educationDocs.length === 0) ? (
-                      <div className="text-center py-4 text-gray-500 text-sm">
-                        No education documents added yet.
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {editFormData.documents.educationDocs.map((doc, index) => (
-                          <div key={index} className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="url"
-                                value={doc}
-                                onChange={(e) => {
-                                  const newDocs = [...(editFormData.documents?.educationDocs || [])];
-                                  newDocs[index] = e.target.value;
-                                  setEditFormData(prev => ({
-                                    ...prev,
-                                    documents: {
-                                      ...prev.documents,
-                                      educationDocs: newDocs
-                                    }
-                                  }));
-                                }}
-                                className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                  doc.trim() 
-                                    ? 'border-green-300 bg-green-50' 
-                                    : 'border-gray-300'
-                                }`}
-                                placeholder="https://example.com/education-doc.pdf"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newDocs = editFormData.documents?.educationDocs?.filter((_, i) => i !== index) || [];
-                                  setEditFormData(prev => ({
-                                    ...prev,
-                                    documents: {
-                                      ...prev.documents,
-                                      educationDocs: newDocs
-                                    }
-                                  }));
-                                }}
-                                className="text-red-600 hover:text-red-700 p-1"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            {doc.trim() && (
-                              <div className="ml-0 p-2 bg-green-50 border border-green-200 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs text-green-700 font-medium">
-                                    Education Document {index + 1} ✓ Uploaded
-                                  </p>
-                                  <a 
-                                    href={doc} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:text-blue-800 underline"
-                                  >
-                                    View Document
-                                  </a>
-                                </div>
-                                <p className="text-xs text-gray-600 break-all mt-1">{doc}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
-                  {/* Other Documents */}
-                  <div className="mt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h5 className="text-md font-medium text-gray-900">Other Documents</h5>
-                        <p className="text-xs text-gray-500">Additional documents (Experience letters, Salary slips, Medical certificates, etc.)</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditFormData(prev => ({
-                            ...prev,
-                            documents: {
-                              ...prev.documents,
-                              otherDocs: [...(prev.documents?.otherDocs || []), '']
-                            }
-                          }));
-                        }}
-                        className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Document</span>
-                      </button>
-                    </div>
-                    {(!editFormData.documents?.otherDocs || editFormData.documents.otherDocs.length === 0) ? (
-                      <div className="text-center py-4 text-gray-500 text-sm">
-                        No other documents added yet.
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {editFormData.documents.otherDocs.map((doc, index) => (
-                          <div key={index} className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="url"
-                                value={doc}
-                                onChange={(e) => {
-                                  const newDocs = [...(editFormData.documents?.otherDocs || [])];
-                                  newDocs[index] = e.target.value;
-                                  setEditFormData(prev => ({
-                                    ...prev,
-                                    documents: {
-                                      ...prev.documents,
-                                      otherDocs: newDocs
-                                    }
-                                  }));
-                                }}
-                                className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                  doc.trim() 
-                                    ? 'border-green-300 bg-green-50' 
-                                    : 'border-gray-300'
-                                }`}
-                                placeholder="https://example.com/other-doc.pdf"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newDocs = editFormData.documents?.otherDocs?.filter((_, i) => i !== index) || [];
-                                  setEditFormData(prev => ({
-                                    ...prev,
-                                    documents: {
-                                      ...prev.documents,
-                                      otherDocs: newDocs
-                                    }
-                                  }));
-                                }}
-                                className="text-red-600 hover:text-red-700 p-1"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                            {doc.trim() && (
-                              <div className="ml-0 p-2 bg-green-50 border border-green-200 rounded-lg">
-                                <div className="flex items-center justify-between">
-                                  <p className="text-xs text-green-700 font-medium">
-                                    Other Document {index + 1} ✓ Uploaded
-                                  </p>
-                                  <a 
-                                    href={doc} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 hover:text-blue-800 underline"
-                                  >
-                                    View Document
-                                  </a>
-                                </div>
-                                <p className="text-xs text-gray-600 break-all mt-1">{doc}</p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Google Drive Link *
+                      {editFormData.documents?.driveLink && (
+                        <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
+                      )}
+                    </label>
+                    <input
+                      type="url"
+                      value={editFormData.documents?.driveLink || ''}
+                      onChange={(e) => handleNestedEditFormChange('documents', 'driveLink', e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        editFormData.documents?.driveLink 
+                          ? 'border-green-300 bg-green-50' 
+                          : 'border-gray-300'
+                      }`}
+                      placeholder="https://drive.google.com/drive/folders/..."
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Share the Google Drive folder link with "Anyone with the link can view" permission
+                    </p>
+                    {editFormData.documents?.driveLink && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-green-700 font-medium">📁 Document Folder ✓ Ready</p>
+                          <a 
+                            href={editFormData.documents.driveLink.startsWith('http') ? editFormData.documents.driveLink : `https://${editFormData.documents.driveLink}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+                          >
+                            Open Drive Folder →
+                          </a>
+                        </div>
+                        <p className="text-xs text-gray-600 break-all mt-1">{editFormData.documents.driveLink}</p>
                       </div>
                     )}
                   </div>
@@ -1886,6 +1574,14 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                       </label>
                       <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
                         {viewModal.employee.personal?.employeeId || 'N/A'}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Access Card Number
+                      </label>
+                      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
+                        {viewModal.employee.personal?.accessCardNumber || 'N/A'}
                       </div>
                     </div>
                     <div>
@@ -2040,22 +1736,6 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Salary
-                      </label>
-                      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                        {viewModal.employee.employment?.salary ? `₹${viewModal.employee.employment.salary.toLocaleString()}` : 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Reporting Manager
-                      </label>
-                      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                        {viewModal.employee.employment?.reportingManager || 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Status
                       </label>
                       <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
@@ -2091,14 +1771,6 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                       </label>
                       <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
                         {viewModal.employee.statutory?.aadhaar || 'N/A'}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Passport Number
-                      </label>
-                      <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900">
-                        {viewModal.employee.statutory?.passport || 'N/A'}
                       </div>
                     </div>
                     <div>
@@ -2275,214 +1947,64 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
 
                 {/* Documents Section */}
                 <div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Documents</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Aadhaar Card
-                        {viewModal.employee.documents?.aadhaarUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <div className={`px-3 py-2 border rounded-lg text-gray-900 ${
-                        viewModal.employee.documents?.aadhaarUrl 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        {viewModal.employee.documents?.aadhaarUrl ? (
-                          <div>
-                            <a 
-                              href={viewModal.employee.documents.aadhaarUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Document
-                            </a>
-                            <p className="text-xs text-gray-600 mt-1 break-all">{viewModal.employee.documents.aadhaarUrl}</p>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">Not uploaded</span>
-                        )}
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Document Links</h4>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h5 className="text-sm font-medium text-blue-900 mb-2">📁 Required Documents</h5>
+                    <p className="text-xs text-blue-800 mb-3">All documents should be uploaded in a single Google Drive folder:</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-blue-700">
+                      <div className="space-y-1">
+                        <div>• PAN Card</div>
+                        <div>• Aadhaar Card</div>
+                        <div>• Bank Proof</div>
+                        <div>• 10th Mark Sheet</div>
+                        <div>• 12th Mark Sheet</div>
+                        <div>• UG Degree & Convocation Mark Sheet</div>
+                        <div>• PG Degree & Convocation Mark Sheet</div>
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        PAN Card
-                        {viewModal.employee.documents?.panUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <div className={`px-3 py-2 border rounded-lg text-gray-900 ${
-                        viewModal.employee.documents?.panUrl 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        {viewModal.employee.documents?.panUrl ? (
-                          <div>
-                            <a 
-                              href={viewModal.employee.documents.panUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Document
-                            </a>
-                            <p className="text-xs text-gray-600 mt-1 break-all">{viewModal.employee.documents.panUrl}</p>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">Not uploaded</span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Passport
-                        {viewModal.employee.documents?.passportUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <div className={`px-3 py-2 border rounded-lg text-gray-900 ${
-                        viewModal.employee.documents?.passportUrl 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        {viewModal.employee.documents?.passportUrl ? (
-                          <div>
-                            <a 
-                              href={viewModal.employee.documents.passportUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Document
-                            </a>
-                            <p className="text-xs text-gray-600 mt-1 break-all">{viewModal.employee.documents.passportUrl}</p>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">Not uploaded</span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Resume
-                        {viewModal.employee.documents?.resumeUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <div className={`px-3 py-2 border rounded-lg text-gray-900 ${
-                        viewModal.employee.documents?.resumeUrl 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        {viewModal.employee.documents?.resumeUrl ? (
-                          <div>
-                            <a 
-                              href={viewModal.employee.documents.resumeUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Document
-                            </a>
-                            <p className="text-xs text-gray-600 mt-1 break-all">{viewModal.employee.documents.resumeUrl}</p>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">Not uploaded</span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Offer Letter
-                        {viewModal.employee.documents?.offerLetterUrl && (
-                          <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
-                        )}
-                      </label>
-                      <div className={`px-3 py-2 border rounded-lg text-gray-900 ${
-                        viewModal.employee.documents?.offerLetterUrl 
-                          ? 'bg-green-50 border-green-200' 
-                          : 'bg-gray-50 border-gray-200'
-                      }`}>
-                        {viewModal.employee.documents?.offerLetterUrl ? (
-                          <div>
-                            <a 
-                              href={viewModal.employee.documents.offerLetterUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Document
-                            </a>
-                            <p className="text-xs text-gray-600 mt-1 break-all">{viewModal.employee.documents.offerLetterUrl}</p>
-                          </div>
-                        ) : (
-                          <span className="text-gray-500">Not uploaded</span>
-                        )}
+                      <div className="space-y-1">
+                        <div>• Diploma Degree & Convocation Mark Sheet</div>
+                        <div>• Experience Letter</div>
+                        <div>• Relieving Letter</div>
+                        <div>• 3 Month Payslip</div>
+                        <div>• Worley Offer Letter</div>
+                        <div>• Passport Size Image</div>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Education Documents */}
-                  {viewModal.employee.documents?.educationDocs && viewModal.employee.documents.educationDocs.length > 0 && (
-                    <div className="mt-6">
-                      <h5 className="text-md font-medium text-gray-900 mb-4">
-                        Education Documents 
-                        <span className="ml-2 text-green-600 text-xs">✓ {viewModal.employee.documents.educationDocs.length} uploaded</span>
-                      </h5>
-                      <div className="space-y-2">
-                        {viewModal.employee.documents.educationDocs.map((doc, index) => (
-                          <div key={index} className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-green-700 font-medium">
-                                Education Document {index + 1} ✓ Uploaded
-                              </span>
-                              <a 
-                                href={doc} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline text-sm"
-                              >
-                                View Document
-                              </a>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1 break-all">{doc}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Other Documents */}
-                  {viewModal.employee.documents?.otherDocs && viewModal.employee.documents.otherDocs.length > 0 && (
-                    <div className="mt-6">
-                      <h5 className="text-md font-medium text-gray-900 mb-4">
-                        Other Documents 
-                        <span className="ml-2 text-green-600 text-xs">✓ {viewModal.employee.documents.otherDocs.length} uploaded</span>
-                      </h5>
-                      <div className="space-y-2">
-                        {viewModal.employee.documents.otherDocs.map((doc, index) => (
-                          <div key={index} className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-green-700 font-medium">
-                                Other Document {index + 1} ✓ Uploaded
-                              </span>
-                              <a 
-                                href={doc} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 underline text-sm"
-                              >
-                                View Document
-                              </a>
-                            </div>
-                            <p className="text-xs text-gray-600 mt-1 break-all">{doc}</p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Google Drive Link
+                      {viewModal.employee.documents?.driveLink && (
+                        <span className="ml-2 text-green-600 text-xs">✓ Uploaded</span>
+                      )}
+                    </label>
+                    <div className={`px-3 py-2 border rounded-lg text-gray-900 ${
+                      viewModal.employee.documents?.driveLink 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      {viewModal.employee.documents?.driveLink ? (
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-green-700 font-medium">📁 Document Folder ✓ Ready</span>
+                            <a 
+                              href={viewModal.employee.documents.driveLink.startsWith('http') ? viewModal.employee.documents.driveLink : `https://${viewModal.employee.documents.driveLink}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline font-medium"
+                            >
+                              Open Drive Folder →
+                            </a>
                           </div>
-                        ))}
-                      </div>
+                          <p className="text-xs text-gray-600 break-all mt-1">{viewModal.employee.documents.driveLink}</p>
+                        </div>
+                      ) : (
+                        <span className="text-gray-500">Not uploaded</span>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 

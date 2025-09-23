@@ -55,6 +55,11 @@ const userSchema = new mongoose.Schema({
       unique: true,
       sparse: true,
     },
+    accessCardNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     dob: {
       type: Date,
     },
@@ -204,33 +209,15 @@ const userSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['active', 'inactive', 'terminated'],
+      enum: ['active', 'inactive'],
       default: 'active',
     },
   },
   
   documents: {
-    aadhaarUrl: {
+    driveLink: {
       type: String,
     },
-    panUrl: {
-      type: String,
-    },
-    passportUrl: {
-      type: String,
-    },
-    resumeUrl: {
-      type: String,
-    },
-    offerLetterUrl: {
-      type: String,
-    },
-    educationDocs: [{
-      type: String,
-    }],
-    otherDocs: [{
-      type: String,
-    }],
   },
 }, {
   timestamps: true,

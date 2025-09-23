@@ -115,6 +115,23 @@ const AdminSettings: React.FC = () => {
         documentExpiryAlert: settings.notifications?.documentExpiryAlert || true,
         systemMaintenanceAlert: settings.notifications?.systemMaintenanceAlert || true
       });
+      
+      setSecuritySettings({
+        twoFactorAuth: settings.security?.twoFactorAuth || false,
+        ipWhitelist: settings.security?.ipWhitelist || '',
+        sessionEncryption: settings.security?.sessionEncryption || true,
+        auditLogging: settings.security?.auditLogging || true,
+        passwordExpiry: settings.security?.passwordExpiry || 90,
+        lockoutDuration: settings.security?.lockoutDuration || 30
+      });
+      
+      setBackupSettings({
+        autoBackup: settings.backup?.autoBackup || true,
+        backupRetention: settings.backup?.backupRetention || 30,
+        cloudBackup: settings.backup?.cloudBackup || false,
+        backupEncryption: settings.backup?.backupEncryption || true,
+        backupSchedule: settings.backup?.backupSchedule || 'daily'
+      });
     }
   }, [settings]);
 
@@ -160,6 +177,25 @@ const AdminSettings: React.FC = () => {
     leaveRequestAlert: true,
     documentExpiryAlert: true,
     systemMaintenanceAlert: true
+  });
+
+  // Security Settings State
+  const [securitySettings, setSecuritySettings] = useState({
+    twoFactorAuth: false,
+    ipWhitelist: '',
+    sessionEncryption: true,
+    auditLogging: true,
+    passwordExpiry: 90,
+    lockoutDuration: 30
+  });
+
+  // Backup Settings State
+  const [backupSettings, setBackupSettings] = useState({
+    autoBackup: true,
+    backupRetention: 30,
+    cloudBackup: false,
+    backupEncryption: true,
+    backupSchedule: 'daily'
   });
 
   const tabs = [
@@ -274,10 +310,10 @@ const AdminSettings: React.FC = () => {
           result = await dispatch(updateNotificationSettings(notificationSettings));
           break;
         case 'security':
-          result = await dispatch(updateSecuritySettings({})); // Add security settings state if needed
+          result = await dispatch(updateSecuritySettings(securitySettings));
           break;
         case 'backup':
-          result = await dispatch(updateBackupSettings({})); // Add backup settings state if needed
+          result = await dispatch(updateBackupSettings(backupSettings));
           break;
         default:
           throw new Error('Unknown section');
@@ -482,6 +518,33 @@ const AdminSettings: React.FC = () => {
             <option value="America/Denver">Mountain Time (MT)</option>
             <option value="America/Los_Angeles">Pacific Time (PT)</option>
             <option value="UTC">UTC</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+          <select
+            value={companySettings.currency}
+            onChange={(e) => setCompanySettings(prev => ({ ...prev, currency: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="USD">USD - US Dollar</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="GBP">GBP - British Pound</option>
+            <option value="CAD">CAD - Canadian Dollar</option>
+            <option value="AUD">AUD - Australian Dollar</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Date Format</label>
+          <select
+            value={companySettings.dateFormat}
+            onChange={(e) => setCompanySettings(prev => ({ ...prev, dateFormat: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+            <option value="DD/MM/YYYY">DD/MM/YYYY (EU)</option>
+            <option value="YYYY-MM-DD">YYYY-MM-DD (ISO)</option>
+            <option value="DD-MM-YYYY">DD-MM-YYYY (EU Alt)</option>
           </select>
         </div>
       </div>

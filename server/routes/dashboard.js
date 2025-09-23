@@ -10,6 +10,12 @@ router.get('/stats', async (req, res) => {
     const totalAdmins = await User.countDocuments({ role: 'admin' });
     const totalManagers = await User.countDocuments({ role: 'manager' });
     const totalRegularEmployees = await User.countDocuments({ role: 'employee' });
+    const totalInactiveEmployees = await User.countDocuments({ 
+      $or: [
+        { 'employment.status': 'inactive' },
+        { isActive: false }
+      ]
+    });
 
     // Get recent employees (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -26,9 +32,9 @@ router.get('/stats', async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
-    // Get recent activity (last 10 employees created)
+    // Get recent activity (last 10 employees created) with detailed information
     const recentActivity = await User.find()
-      .select('name email role createdAt')
+      .select('firstName lastName email role createdAt personal employment contact')
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -40,14 +46,20 @@ router.get('/stats', async (req, res) => {
           totalAdmins,
           totalManagers,
           totalRegularEmployees,
+          totalInactiveEmployees,
           recentEmployees
         },
         employeesByDepartment,
         recentActivity: recentActivity.map(emp => ({
           id: emp._id,
-          name: emp.name,
+          name: `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Unknown',
           email: emp.email,
           role: emp.role,
+          employeeId: emp.personal?.employeeId || 'N/A',
+          department: emp.employment?.department || 'Unassigned',
+          designation: emp.employment?.designation || 'N/A',
+          phone: emp.contact?.phone || 'N/A',
+          joiningDate: emp.employment?.joiningDate || emp.createdAt,
           createdAt: emp.createdAt
         }))
       }

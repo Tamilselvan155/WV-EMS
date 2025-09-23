@@ -5,12 +5,12 @@ import {
   BarChart3, 
   Settings, 
   LogOut,
-  Menu,
   X,
   User
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { logout } from '../../store/slices/authSlice';
+import wvLogo from '../../assets/wvlogo.png';
 
 interface SidebarProps {
   currentView: string;
@@ -75,12 +75,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Logo/Brand */}
         <div className="hidden lg:flex items-center p-6 border-b border-gray-200">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-            <Users className="w-5 h-5 text-white" />
+          <div className="w-10 h-14 rounded-lg flex items-center justify-center mr-3">
+            <img src={wvLogo} alt="Worley Ventures Logo" className="w-full h-full" />
+            
+            {/* <Users className="w-5 h-5 text-white" /> */}
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-800">Worley Ventures</h1>
-            <p className="text-xs text-gray-500">HR Management</p>
+            <p className="text-xs text-gray-500">Employee Management System</p>
           </div>
         </div>
 
@@ -114,7 +116,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* User Info & Logout */}
         <div className="border-t border-gray-200 p-4">
-          <div className="flex items-center mb-4">
+          <div className="flex items-center mb-0">
             <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
               <User className="w-5 h-5 text-gray-600" />
             </div>
@@ -128,7 +130,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           
-          <button
+          {/* <button
             onClick={handleLogout}
             disabled={loading}
             className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -147,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <span>Sign Out</span>
               </>
             )}
-          </button>
+          </button> */}
         </div>
       </div>
     </>
