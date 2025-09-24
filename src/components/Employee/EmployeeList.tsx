@@ -251,6 +251,12 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
       }
     }
 
+    if (!editFormData.personal?.maritalStatus?.trim()) {
+      errors.push('Marital Status is required');
+    } else if (!['single', 'married', 'divorced', 'widowed', 'separated'].includes(editFormData.personal.maritalStatus)) {
+      errors.push('Please select a valid Marital Status');
+    }
+
     // Contact Information Validation
     if (!editFormData.contact?.email?.trim()) {
       errors.push('Email Address is required');
@@ -1270,27 +1276,33 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                         <option value="">Select Blood Group</option>
                         <option value="A+">A+</option>
                         <option value="A-">A-</option>
+                        <option value="A1+">A1+</option>
+                        <option value="A1-">A1-</option>
                         <option value="B+">B+</option>
                         <option value="B-">B-</option>
                         <option value="AB+">AB+</option>
                         <option value="AB-">AB-</option>
+                        <option value="A1B+">A1B+</option>
+                        <option value="A1B-">A1B-</option>
                         <option value="O+">O+</option>
                         <option value="O-">O-</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Marital Status
+                        Marital Status *
                       </label>
                       <select
                         value={editFormData.personal?.maritalStatus || ''}
                         onChange={(e) => handleNestedEditFormChange('personal', 'maritalStatus', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
                       >
                         <option value="single">Single</option>
                         <option value="married">Married</option>
                         <option value="divorced">Divorced</option>
                         <option value="widowed">Widowed</option>
+                        <option value="separated">Separated</option>
                       </select>
                     </div>
                   </div>
