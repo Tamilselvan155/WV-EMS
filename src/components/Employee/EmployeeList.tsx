@@ -777,6 +777,17 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
               ))}
             </select>
 
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedDepartment('');
+                setSelectedStatus('');
+              }}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+              Clear Filters
+            </button>
+
             <div className="flex rounded-lg border border-gray-300 overflow-hidden">
               <button
                 onClick={() => setViewMode('table')}
