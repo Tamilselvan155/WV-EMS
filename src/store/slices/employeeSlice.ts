@@ -87,6 +87,21 @@ export const deleteEmployee = createAsyncThunk(
   }
 );
 
+export const bulkImportEmployees = createAsyncThunk(
+  'employees/bulkImportEmployees',
+  async (employees: Partial<Employee>[], { rejectWithValue }) => {
+    try {
+      console.log('Redux: Bulk importing employees:', employees);
+      const response = await employeeAPI.bulkImportEmployees(employees);
+      console.log('Redux: Bulk import response:', response);
+      return response.data;
+    } catch (error: any) {
+      console.error('Redux: Error in bulk import:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to bulk import employees');
+    }
+  }
+);
+
 const employeeSlice = createSlice({
   name: 'employees',
   initialState,
@@ -183,6 +198,23 @@ const employeeSlice = createSlice({
       .addCase(deleteEmployee.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to delete employee';
+      })
+      // Bulk import employees
+      .addCase(bulkImportEmployees.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(bulkImportEmployees.fulfilled, (state, action) => {
+        state.loading = false;
+        // Add successfully imported employees to the list
+        if (action.payload.successfulEmployees) {
+          state.employees.unshift(...action.payload.successfulEmployees);
+          state.pagination.totalEmployees += action.payload.results.success;
+        }
+      })
+      .addCase(bulkImportEmployees.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to bulk import employees';
       });
   },
 });

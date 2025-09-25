@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, Download, Users, Phone, Mail, MapPin, AlertTriangle, X, Upload, Check } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchEmployees, deleteEmployee, updateEmployee, createEmployee } from '../../store/slices/employeeSlice';
+import { fetchEmployees, deleteEmployee, updateEmployee, createEmployee, bulkImportEmployees } from '../../store/slices/employeeSlice';
 import { Employee } from '../../types';
 import { exportToExcel, importFromExcel, downloadTemplate } from '../../utils/excelUtils';
 import { formatEmployeeDocumentUrls } from '../../utils/urlUtils';
@@ -54,6 +54,19 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
   });
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{
+    current: number;
+    total: number;
+    success: number;
+    failed: number;
+    errors: Array<{ index: number; employee: string; error: string }>;
+  }>({
+    current: 0,
+    total: 0,
+    success: 0,
+    failed: 0,
+    errors: []
+  });
 
   // Fetch employees on component mount
   useEffect(() => {
@@ -609,21 +622,50 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
 
     setIsImporting(true);
     setImportError(null);
+    
+    // Initialize progress tracking
+    setImportProgress({
+      current: 0,
+      total: importModal.preview.length,
+      success: 0,
+      failed: 0,
+      errors: []
+    });
 
     try {
-      // Import employees one by one
-      for (const employee of importModal.preview) {
-        await dispatch(createEmployee(employee)).unwrap();
-      }
+      // Use bulk import for better performance
+      const result = await dispatch(bulkImportEmployees(importModal.preview)).unwrap();
+      
+      // Update progress with results
+      setImportProgress({
+        current: result.results.total,
+        total: result.results.total,
+        success: result.results.success,
+        failed: result.results.failed,
+        errors: result.results.errors || []
+      });
 
       // Refresh the employee list
       await dispatch(fetchEmployees({ page: 1, limit: 10 })).unwrap();
 
-      // Close modal and reset state
-      setImportModal({ isOpen: false, file: null, preview: null });
-      setImportError(null);
-    } catch (error) {
-      setImportError(error instanceof Error ? error.message : 'Failed to import employees');
+      // Show results
+      if (result.results.failed > 0) {
+        setImportError(`Import completed with errors. ${result.results.success} employees imported successfully, ${result.results.failed} failed. Check the error details below.`);
+      } else {
+        setImportError(null);
+        // Close modal and reset state only if all successful
+        setImportModal({ isOpen: false, file: null, preview: null });
+        setImportProgress({
+          current: 0,
+          total: 0,
+          success: 0,
+          failed: 0,
+          errors: []
+        });
+      }
+    } catch (error: any) {
+      console.error('Bulk import error:', error);
+      setImportError(error?.message || 'Failed to import employees');
     } finally {
       setIsImporting(false);
     }
@@ -632,6 +674,13 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
   const handleImportCancel = () => {
     setImportModal({ isOpen: false, file: null, preview: null });
     setImportError(null);
+    setImportProgress({
+      current: 0,
+      total: 0,
+      success: 0,
+      failed: 0,
+      errors: []
+    });
   };
 
   // Education and Experience helper functions
@@ -2477,6 +2526,50 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                     </div>
                   )}
 
+                  {/* Import Progress */}
+                  {isImporting && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-blue-700 font-medium">Importing employees...</span>
+                        <span className="text-blue-600 text-sm">
+                          {importProgress.current} / {importProgress.total}
+                        </span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between text-sm text-blue-600">
+                        <span>Success: {importProgress.success}</span>
+                        <span>Failed: {importProgress.failed}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Detailed Error List */}
+                  {importProgress.errors.length > 0 && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h5 className="font-medium text-red-900 mb-3">Import Errors:</h5>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {importProgress.errors.map((error, index) => (
+                          <div key={index} className="bg-red-100 border border-red-200 rounded p-2">
+                            <div className="flex items-start">
+                              <AlertTriangle className="w-4 h-4 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1">
+                                <p className="text-red-800 font-medium text-sm">
+                                  Row {error.index}: {error.employee}
+                                </p>
+                                <p className="text-red-700 text-xs mt-1">{error.error}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {importModal.preview && (
                     <div className="space-y-4">
                       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -2517,19 +2610,30 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                       </div>
 
                       <div className="flex justify-end space-x-3 pt-4 border-t">
-                        <button
-                          onClick={handleImportCancel}
-                          className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleImportConfirm}
-                          disabled={isImporting}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isImporting ? 'Importing...' : `Import ${importModal.preview.length} Employee(s)`}
-                        </button>
+                        {importProgress.errors.length > 0 ? (
+                          <button
+                            onClick={handleImportCancel}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            Close
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              onClick={handleImportCancel}
+                              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleImportConfirm}
+                              disabled={isImporting}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isImporting ? 'Importing...' : `Import ${importModal.preview.length} Employee(s)`}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}

@@ -55,6 +55,14 @@ export const employeeAPI = {
     const response = await apiInstance.get(`${EMPLOYEES_ENDPOINT}/stats`);
     return response.data;
   },
+
+  // Bulk import employees
+  bulkImportEmployees: async (employees: Partial<Employee>[]) => {
+    console.log('Sending bulk employee data to backend:', employees);
+    const response = await apiInstance.post(`${EMPLOYEES_ENDPOINT}/bulk`, { employees });
+    console.log('Backend bulk import response:', response.data);
+    return response.data;
+  },
 };
 
 export default employeeAPI;

@@ -249,41 +249,47 @@ const validateEmployeeData = (data) => {
   }
 
   // Statutory Information Validation
-  if (!data.statutory?.pan?.trim()) {
+  const panNumber = data.statutory?.pan ? String(data.statutory.pan).trim() : '';
+  if (!panNumber) {
     errors.push('PAN Number is required');
-  } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(data.statutory.pan.trim())) {
-    errors.push('PAN Number must be in format: AAAAA9999A (5 letters, 4 numbers, 1 letter)');
+  } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNumber)) {
+    errors.push(`PAN Number must be in format: AAAAA9999A (5 letters, 4 numbers, 1 letter) (received: "${panNumber}")`);
   }
 
-  if (!data.statutory?.aadhaar?.trim()) {
+  const aadhaarNumber = data.statutory?.aadhaar ? String(data.statutory.aadhaar).trim() : '';
+  if (!aadhaarNumber) {
     errors.push('Aadhaar Number is required');
-  } else if (!/^[0-9]{12}$/.test(data.statutory.aadhaar.trim())) {
-    errors.push('Aadhaar Number must be exactly 12 digits');
+  } else if (!/^[0-9]{12}$/.test(aadhaarNumber)) {
+    errors.push(`Aadhaar Number must be exactly 12 digits (received: "${aadhaarNumber}")`);
   }
 
-  if (data.statutory?.uan?.trim()) {
-    if (!/^[0-9]{12}$/.test(data.statutory.uan.trim())) {
+  const uanNumber = data.statutory?.uan ? String(data.statutory.uan).trim() : '';
+  if (uanNumber) {
+    if (!/^[0-9]{12}$/.test(uanNumber)) {
       errors.push('UAN Number must be exactly 12 digits');
     }
   }
 
-  if (data.statutory?.esic?.trim()) {
-    if (!/^[0-9]{10}$/.test(data.statutory.esic.trim())) {
+  const esicNumber = data.statutory?.esic ? String(data.statutory.esic).trim() : '';
+  if (esicNumber) {
+    if (!/^[0-9]{10}$/.test(esicNumber)) {
       errors.push('ESIC Number must be exactly 10 digits');
     }
   }
 
   // Banking Details Validation
-  if (!data.bank?.accountNumber?.trim()) {
+  const accountNumber = data.bank?.accountNumber ? String(data.bank.accountNumber).trim() : '';
+  if (!accountNumber) {
     errors.push('Account Number is required');
-  } else if (!/^[0-9]{9,18}$/.test(data.bank.accountNumber.trim())) {
-    errors.push('Account Number must be between 9 and 18 digits');
+  } else if (!/^[0-9]{9,18}$/.test(accountNumber)) {
+    errors.push(`Account Number must be between 9 and 18 digits (received: "${accountNumber}")`);
   }
 
-  if (!data.bank?.ifsc?.trim()) {
+  const ifscCode = data.bank?.ifsc ? String(data.bank.ifsc).trim() : '';
+  if (!ifscCode) {
     errors.push('IFSC Code is required');
-  } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(data.bank.ifsc.trim())) {
-    errors.push('IFSC Code must be in format: AAAA0XXXXXX (4 letters, 0, 6 alphanumeric)');
+  } else if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifscCode)) {
+    errors.push(`IFSC Code must be in format: AAAA0XXXXXX (4 letters, 0, 6 alphanumeric) (received: "${ifscCode}")`);
   }
 
   if (!data.bank?.bankName?.trim()) {
@@ -680,6 +686,179 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Internal server error'
+    });
+  }
+});
+
+// Bulk import employees
+router.post('/bulk', async (req, res) => {
+  try {
+    const { employees } = req.body;
+    
+    if (!Array.isArray(employees) || employees.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employees array is required and cannot be empty'
+      });
+    }
+
+    const results = {
+      total: employees.length,
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+
+    const successfulEmployees = [];
+    const failedEmployees = [];
+
+    // Process each employee
+    for (let i = 0; i < employees.length; i++) {
+      const employeeData = employees[i];
+      const employeeName = `${employeeData.personal?.firstName || ''} ${employeeData.personal?.lastName || ''}`.trim() || `Employee ${i + 1}`;
+      
+      try {
+        // Validate employee data
+        const validationErrors = validateEmployeeData(employeeData);
+        if (validationErrors.length > 0) {
+          failedEmployees.push({
+            index: i + 1,
+            employee: employeeName,
+            error: validationErrors.join(', ')
+          });
+          results.failed++;
+          continue;
+        }
+
+        // Map nested data to root level for User model
+        const userData = {
+          firstName: employeeData.personal?.firstName,
+          lastName: employeeData.personal?.lastName,
+          email: employeeData.contact?.email,
+          personal: employeeData.personal,
+          contact: employeeData.contact,
+          statutory: employeeData.statutory,
+          bank: employeeData.bank,
+          education: employeeData.education || [],
+          experience: employeeData.experience || [],
+          employment: employeeData.employment,
+          documents: employeeData.documents || { driveLink: '' },
+          role: 'employee'
+        };
+
+        // Check for duplicates
+        const existingUser = await User.findOne({ email: userData.email });
+        if (existingUser) {
+          failedEmployees.push({
+            index: i + 1,
+            employee: employeeName,
+            error: 'Email already exists'
+          });
+          results.failed++;
+          continue;
+        }
+
+        if (userData.personal?.employeeId) {
+          const existingEmployeeId = await User.findOne({ 'personal.employeeId': userData.personal.employeeId });
+          if (existingEmployeeId) {
+            failedEmployees.push({
+              index: i + 1,
+              employee: employeeName,
+              error: 'Employee ID already exists'
+            });
+            results.failed++;
+            continue;
+          }
+        }
+
+        if (userData.personal?.accessCardNumber) {
+          const existingAccessCard = await User.findOne({ 'personal.accessCardNumber': userData.personal.accessCardNumber });
+          if (existingAccessCard) {
+            failedEmployees.push({
+              index: i + 1,
+              employee: employeeName,
+              error: 'Access Card Number already exists'
+            });
+            results.failed++;
+            continue;
+          }
+        }
+
+        // Generate employee ID if not provided
+        if (!userData.personal?.employeeId) {
+          const lastEmployee = await User.findOne({}, {}, { sort: { 'personal.employeeId': -1 } });
+          const lastId = lastEmployee?.personal?.employeeId ? parseInt(lastEmployee.personal.employeeId.replace('EMP', '')) : 0;
+          userData.personal = {
+            ...userData.personal,
+            employeeId: `EMP${String(lastId + 1 + i).padStart(3, '0')}`
+          };
+        }
+
+        // Generate default password
+        if (!userData.password) {
+          const defaultPassword = userData.personal?.employeeId || 'password123';
+          userData.password = await bcrypt.hash(defaultPassword, 12);
+        }
+
+        // Create employee
+        const employee = new User(userData);
+        await employee.save();
+        
+        successfulEmployees.push(employee);
+        results.success++;
+
+      } catch (error) {
+        console.error(`Error creating employee ${i + 1} (${employeeName}):`, error);
+        
+        let errorMessage = 'Unknown error';
+        if (error.name === 'ValidationError') {
+          errorMessage = Object.values(error.errors).map(err => err.message).join(', ');
+        } else if (error.code === 11000) {
+          const field = Object.keys(error.keyPattern)[0];
+          if (field === 'personal.employeeId') {
+            errorMessage = 'Employee ID already exists';
+          } else if (field === 'personal.accessCardNumber') {
+            errorMessage = 'Access Card Number already exists';
+          } else if (field === 'email') {
+            errorMessage = 'Email already exists';
+          } else {
+            errorMessage = `${field} already exists`;
+          }
+        } else {
+          errorMessage = error.message;
+        }
+
+        failedEmployees.push({
+          index: i + 1,
+          employee: employeeName,
+          error: errorMessage
+        });
+        results.failed++;
+      }
+    }
+
+    results.errors = failedEmployees;
+
+    res.status(200).json({
+      success: true,
+      message: `Bulk import completed. ${results.success} employees created successfully, ${results.failed} failed.`,
+      data: {
+        results,
+        successfulEmployees: successfulEmployees.map(emp => ({
+          _id: emp._id,
+          firstName: emp.firstName,
+          lastName: emp.lastName,
+          email: emp.email,
+          personal: emp.personal
+        }))
+      }
+    });
+
+  } catch (error) {
+    console.error('Bulk import error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during bulk import'
     });
   }
 });

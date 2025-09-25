@@ -171,47 +171,47 @@ export const importFromExcel = (file: File): Promise<Employee[]> => {
 
           return {
               personal: {
-                firstName: row['First Name'] || '',
-                lastName: row['Last Name'] || '',
-                employeeId: row['Employee ID'] || '',
-                accessCardNumber: row['Access Card Number'] || '',
+                firstName: String(row['First Name'] || '').trim(),
+                lastName: String(row['Last Name'] || '').trim(),
+                employeeId: String(row['Employee ID'] || '').trim(),
+                accessCardNumber: String(row['Access Card Number'] || '').trim(),
                 dob: row['Date of Birth'] || '',
                 gender: row['Gender'] || 'male',
-                bloodGroup: row['Blood Group'] || '',
+                bloodGroup: String(row['Blood Group'] || '').trim(),
                 maritalStatus: row['Marital Status'] || 'single'
               },
               contact: {
-                email: row['Email'] || '',
-                phone: row['Phone'] || '',
-                alternatePhone: row['Alternate Phone'] || '',
+                email: String(row['Email'] || '').trim(),
+                phone: String(row['Phone'] || '').trim(),
+                alternatePhone: String(row['Alternate Phone'] || '').trim(),
                 address: {
-                  current: row['Current Address'] || '',
-                  permanent: row['Permanent Address'] || ''
+                  current: String(row['Current Address'] || '').trim(),
+                  permanent: String(row['Permanent Address'] || '').trim()
                 },
                 emergencyContact: {
-                  name: row['Emergency Contact Name'] || '',
-                  relation: row['Emergency Contact Relation'] || '',
-                  phone: row['Emergency Contact Phone'] || ''
+                  name: String(row['Emergency Contact Name'] || '').trim(),
+                  relation: String(row['Emergency Contact Relation'] || '').trim(),
+                  phone: String(row['Emergency Contact Phone'] || '').trim()
                 }
               },
               employment: {
-                department: row['Department'] || '',
-                designation: row['Designation'] || '',
+                department: String(row['Department'] || '').trim(),
+                designation: String(row['Designation'] || '').trim(),
                 joiningDate: row['Joining Date'] || '',
                 employmentType: row['Employment Type'] || 'fulltime',
                 status: row['Status'] || 'active'
               },
               statutory: {
-                pan: row['PAN'] || '',
-                aadhaar: row['Aadhaar'] || '',
-                uan: row['UAN'] || '',
-                esic: row['ESIC'] || ''
+                pan: String(row['PAN'] || '').trim(),
+                aadhaar: String(row['Aadhaar'] || '').trim(),
+                uan: String(row['UAN'] || '').trim(),
+                esic: String(row['ESIC'] || '').trim()
               },
               bank: {
-                accountNumber: row['Bank Account Number'] || '',
-                ifsc: row['IFSC'] || '',
-                bankName: row['Bank Name'] || '',
-                branch: row['Branch'] || '',
+                accountNumber: String(row['Bank Account Number'] || '').trim(),
+                ifsc: String(row['IFSC'] || '').trim(),
+                bankName: String(row['Bank Name'] || '').trim(),
+                branch: String(row['Branch'] || '').trim(),
                 accountType: row['Account Type'] || 'savings'
               },
               documents: {
