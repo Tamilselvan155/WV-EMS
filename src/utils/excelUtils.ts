@@ -240,6 +240,42 @@ export const importFromExcel = (file: File): Promise<Employee[]> => {
 // Download Excel template
 export const downloadTemplate = () => {
   const templateData = [
+    // Header row with instructions
+    {
+      'Employee ID': 'REQUIRED - Format: EMP001, EMP002, etc.',
+      'Access Card Number': 'REQUIRED - Format: AC123456, AC789012, etc.',
+      'First Name': 'REQUIRED - Employee first name',
+      'Last Name': 'REQUIRED - Employee last name',
+      'Email': 'REQUIRED - Valid email address',
+      'Phone': 'REQUIRED - 10+ digits with country code',
+      'Alternate Phone': 'OPTIONAL - 10+ digits with country code',
+      'Date of Birth': 'REQUIRED - Format: YYYY-MM-DD (must be 18+ years)',
+      'Gender': 'REQUIRED - Options: male, female, other',
+      'Blood Group': 'OPTIONAL - Options: A+, A-, B+, B-, AB+, AB-, O+, O-',
+      'Marital Status': 'REQUIRED - Options: single, married, divorced, widowed, separated',
+      'Current Address': 'REQUIRED - Complete current address (min 10 chars)',
+      'Permanent Address': 'OPTIONAL - Complete permanent address (min 10 chars)',
+      'Emergency Contact Name': 'REQUIRED - Full name of emergency contact',
+      'Emergency Contact Relation': 'REQUIRED - Relationship to employee',
+      'Emergency Contact Phone': 'REQUIRED - 10+ digits with country code',
+      'Department': 'REQUIRED - Employee department',
+      'Designation': 'REQUIRED - Employee job title',
+      'Joining Date': 'REQUIRED - Format: YYYY-MM-DD',
+      'Employment Type': 'REQUIRED - Options: fulltime, parttime, contract, intern',
+      'Status': 'REQUIRED - Options: active, inactive',
+      'PAN': 'REQUIRED - Format: AAAAA9999A (5 letters, 4 numbers, 1 letter)',
+      'Aadhaar': 'REQUIRED - Exactly 12 digits',
+      'UAN': 'OPTIONAL - Exactly 12 digits',
+      'ESIC': 'OPTIONAL - Exactly 10 digits',
+      'Bank Account Number': 'REQUIRED - 9-18 digits',
+      'IFSC': 'REQUIRED - Format: AAAA0XXXXXX (4 letters, 0, 6 alphanumeric)',
+      'Bank Name': 'REQUIRED - Bank name',
+      'Branch': 'REQUIRED - Branch name',
+      'Account Type': 'REQUIRED - Options: savings, current, salary',
+      'Document Link': 'OPTIONAL - Google Drive or any document link',
+      'Education Details': 'OPTIONAL - Format: level - institution (year) - percentage% | level - institution (year) - percentage%',
+      'Work Experience': 'OPTIONAL - Format: designation at company (department) - from_date to to_date | designation at company (department) - from_date to Present'
+    },
     // Example employee 1 with education and experience
     {
       'Employee ID': 'EMP001',
@@ -247,17 +283,17 @@ export const downloadTemplate = () => {
       'First Name': 'John',
       'Last Name': 'Doe',
       'Email': 'john.doe@example.com',
-      'Phone': '+1234567890',
-      'Alternate Phone': '+0987654321',
+      'Phone': '+91-9876543210',
+      'Alternate Phone': '+91-9876543211',
       'Date of Birth': '1990-01-01',
       'Gender': 'male',
       'Blood Group': 'O+',
       'Marital Status': 'single',
-      'Current Address': '123 Main St, City, State',
-      'Permanent Address': '123 Main St, City, State',
+      'Current Address': '123 Main Street, Koramangala, Bangalore, Karnataka 560034',
+      'Permanent Address': '123 Main Street, Koramangala, Bangalore, Karnataka 560034',
       'Emergency Contact Name': 'Jane Doe',
       'Emergency Contact Relation': 'Sister',
-      'Emergency Contact Phone': '+1122334455',
+      'Emergency Contact Phone': '+91-9876543212',
       'Department': 'IT',
       'Designation': 'Software Developer',
       'Joining Date': '2024-01-01',
@@ -266,14 +302,14 @@ export const downloadTemplate = () => {
       'PAN': 'ABCDE1234F',
       'Aadhaar': '123456789012',
       'UAN': '123456789012',
-      'ESIC': '123456789012',
-      'Bank Account Number': '1234567890',
+      'ESIC': '1234567890',
+      'Bank Account Number': '1234567890123456',
       'IFSC': 'SBIN0001234',
       'Bank Name': 'State Bank of India',
-      'Branch': 'Main Branch',
+      'Branch': 'Koramangala Branch',
       'Account Type': 'savings',
-      'Document Link': 'https://drive.google.com/drive/folders/...',
-      'Education Details': 'undergraduate - University of Technology (2020) - 85% | postgraduate - Advanced Institute (2022) - 90%',
+      'Document Link': 'https://drive.google.com/drive/folders/1ABC123DEF456GHI789JKL',
+      'Education Details': 'undergraduate - Indian Institute of Technology (2020) - 85% | postgraduate - Indian Institute of Science (2022) - 90%',
       'Work Experience': 'Software Developer at Tech Corp (Engineering) - 2022-01-01 to 2024-01-01 | Senior Developer at Startup Inc (Engineering) - 2024-01-01 to Present'
     },
     // Example employee 2 with different education and experience
@@ -283,17 +319,17 @@ export const downloadTemplate = () => {
       'First Name': 'Jane',
       'Last Name': 'Smith',
       'Email': 'jane.smith@example.com',
-      'Phone': '+9876543210',
-      'Alternate Phone': '+1122334455',
+      'Phone': '+91-9876543213',
+      'Alternate Phone': '+91-9876543214',
       'Date of Birth': '1988-05-15',
       'Gender': 'female',
       'Blood Group': 'A+',
       'Marital Status': 'married',
-      'Current Address': '456 Oak Ave, City, State',
-      'Permanent Address': '456 Oak Ave, City, State',
+      'Current Address': '456 Oak Avenue, Whitefield, Bangalore, Karnataka 560066',
+      'Permanent Address': '456 Oak Avenue, Whitefield, Bangalore, Karnataka 560066',
       'Emergency Contact Name': 'Bob Smith',
       'Emergency Contact Relation': 'Husband',
-      'Emergency Contact Phone': '+9988776655',
+      'Emergency Contact Phone': '+91-9876543215',
       'Department': 'HR',
       'Designation': 'HR Manager',
       'Joining Date': '2023-06-01',
@@ -302,63 +338,185 @@ export const downloadTemplate = () => {
       'PAN': 'FGHIJ5678K',
       'Aadhaar': '987654321098',
       'UAN': '987654321098',
-      'ESIC': '987654321098',
-      'Bank Account Number': '9876543210',
+      'ESIC': '9876543210',
+      'Bank Account Number': '9876543210987654',
       'IFSC': 'HDFC0001234',
       'Bank Name': 'HDFC Bank',
-      'Branch': 'Central Branch',
+      'Branch': 'Whitefield Branch',
       'Account Type': 'savings',
-      'Document Link': 'https://drive.google.com/drive/folders/...',
-      'Education Details': '12th - Central High School (2006) - 92% | undergraduate - Business University (2010) - 88% | postgraduate - Management Institute (2012) - 85%',
+      'Document Link': 'https://drive.google.com/drive/folders/2XYZ789ABC123DEF456GHI',
+      'Education Details': '12th - Central High School (2006) - 92% | undergraduate - Delhi University (2010) - 88% | postgraduate - IIM Bangalore (2012) - 85%',
       'Work Experience': 'HR Executive at ABC Corp (Human Resources) - 2012-07-01 to 2018-12-31 | HR Manager at XYZ Ltd (Human Resources) - 2019-01-01 to Present'
+    },
+    // Empty row for user to add their data
+    {
+      'Employee ID': '',
+      'Access Card Number': '',
+      'First Name': '',
+      'Last Name': '',
+      'Email': '',
+      'Phone': '',
+      'Alternate Phone': '',
+      'Date of Birth': '',
+      'Gender': '',
+      'Blood Group': '',
+      'Marital Status': '',
+      'Current Address': '',
+      'Permanent Address': '',
+      'Emergency Contact Name': '',
+      'Emergency Contact Relation': '',
+      'Emergency Contact Phone': '',
+      'Department': '',
+      'Designation': '',
+      'Joining Date': '',
+      'Employment Type': '',
+      'Status': '',
+      'PAN': '',
+      'Aadhaar': '',
+      'UAN': '',
+      'ESIC': '',
+      'Bank Account Number': '',
+      'IFSC': '',
+      'Bank Name': '',
+      'Branch': '',
+      'Account Type': '',
+      'Document Link': '',
+      'Education Details': '',
+      'Work Experience': ''
     }
   ];
 
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.json_to_sheet(templateData);
   
-  // Set column widths
+  // Set column widths for better readability
   const columnWidths = [
-    { wch: 15 }, // Employee ID
-    { wch: 18 }, // Access Card Number
+    { wch: 20 }, // Employee ID
+    { wch: 25 }, // Access Card Number
     { wch: 15 }, // First Name
     { wch: 15 }, // Last Name
-    { wch: 25 }, // Email
-    { wch: 15 }, // Phone
-    { wch: 15 }, // Alternate Phone
-    { wch: 12 }, // Date of Birth
-    { wch: 10 }, // Gender
-    { wch: 12 }, // Blood Group
-    { wch: 15 }, // Marital Status
-    { wch: 30 }, // Current Address
-    { wch: 30 }, // Permanent Address
-    { wch: 20 }, // Emergency Contact Name
-    { wch: 15 }, // Emergency Contact Relation
-    { wch: 15 }, // Emergency Contact Phone
-    { wch: 15 }, // Department
-    { wch: 20 }, // Designation
-    { wch: 12 }, // Joining Date
-    { wch: 15 }, // Employment Type
-    { wch: 10 }, // Status
-    { wch: 15 }, // PAN
-    { wch: 15 }, // Aadhaar
-    { wch: 15 }, // UAN
+    { wch: 30 }, // Email
+    { wch: 18 }, // Phone
+    { wch: 18 }, // Alternate Phone
+    { wch: 15 }, // Date of Birth
+    { wch: 12 }, // Gender
+    { wch: 15 }, // Blood Group
+    { wch: 18 }, // Marital Status
+    { wch: 40 }, // Current Address
+    { wch: 40 }, // Permanent Address
+    { wch: 25 }, // Emergency Contact Name
+    { wch: 20 }, // Emergency Contact Relation
+    { wch: 20 }, // Emergency Contact Phone
+    { wch: 18 }, // Department
+    { wch: 25 }, // Designation
+    { wch: 15 }, // Joining Date
+    { wch: 18 }, // Employment Type
+    { wch: 12 }, // Status
+    { wch: 18 }, // PAN
+    { wch: 18 }, // Aadhaar
+    { wch: 18 }, // UAN
     { wch: 15 }, // ESIC
-    { wch: 20 }, // Bank Account Number
-    { wch: 15 }, // IFSC
-    { wch: 20 }, // Bank Name
-    { wch: 20 }, // Branch
-    { wch: 15 }, // Account Type
-    { wch: 30 }, // Document Link
-    { wch: 50 }, // Education Details (JSON)
-    { wch: 50 }  // Work Experience (JSON)
+    { wch: 25 }, // Bank Account Number
+    { wch: 18 }, // IFSC
+    { wch: 25 }, // Bank Name
+    { wch: 25 }, // Branch
+    { wch: 18 }, // Account Type
+    { wch: 40 }, // Document Link
+    { wch: 60 }, // Education Details
+    { wch: 60 }  // Work Experience
   ];
   worksheet['!cols'] = columnWidths;
 
+  // Add instructions sheet
+  const instructionsData = [
+    ['EMPLOYEE IMPORT TEMPLATE - INSTRUCTIONS'],
+    [''],
+    ['This template contains all required fields for importing employees into the Worley Ventures EMS system.'],
+    [''],
+    ['IMPORTANT NOTES:'],
+    ['1. REQUIRED fields must be filled for each employee'],
+    ['2. OPTIONAL fields can be left empty'],
+    ['3. Follow the exact format specified for each field'],
+    ['4. Use the examples provided as a guide'],
+    ['5. Delete the instruction row (Row 1) before importing'],
+    ['6. Do not modify column headers'],
+    [''],
+    ['FIELD SPECIFICATIONS:'],
+    [''],
+    ['PERSONAL INFORMATION:'],
+    ['• Employee ID: Format EMP001, EMP002, etc. (auto-generated if empty)'],
+    ['• Access Card Number: Format AC123456, AC789012, etc.'],
+    ['• First Name: 2-50 characters, letters and spaces only'],
+    ['• Last Name: 1-50 characters, letters and spaces only'],
+    ['• Date of Birth: YYYY-MM-DD format, must be 18+ years old'],
+    ['• Gender: male, female, or other'],
+    ['• Blood Group: A+, A-, B+, B-, AB+, AB-, O+, O- (optional)'],
+    ['• Marital Status: single, married, divorced, widowed, separated'],
+    [''],
+    ['CONTACT INFORMATION:'],
+    ['• Email: Valid email address format'],
+    ['• Phone: 10+ digits with country code (e.g., +91-9876543210)'],
+    ['• Current Address: Complete address, minimum 10 characters'],
+    ['• Emergency Contact: Name, relation, and phone number required'],
+    [''],
+    ['EMPLOYMENT INFORMATION:'],
+    ['• Department: Employee department name'],
+    ['• Designation: Job title'],
+    ['• Joining Date: YYYY-MM-DD format'],
+    ['• Employment Type: fulltime, parttime, contract, intern'],
+    ['• Status: active or inactive'],
+    [''],
+    ['STATUTORY INFORMATION:'],
+    ['• PAN: Format AAAAA9999A (5 letters, 4 numbers, 1 letter)'],
+    ['• Aadhaar: Exactly 12 digits'],
+    ['• UAN: Exactly 12 digits (optional)'],
+    ['• ESIC: Exactly 10 digits (optional)'],
+    [''],
+    ['BANKING DETAILS:'],
+    ['• Account Number: 9-18 digits'],
+    ['• IFSC: Format AAAA0XXXXXX (4 letters, 0, 6 alphanumeric)'],
+    ['• Bank Name: Full bank name'],
+    ['• Branch: Branch name'],
+    ['• Account Type: savings, current, or salary'],
+    [''],
+    ['EDUCATION & EXPERIENCE:'],
+    ['• Education Details: Format: level - institution (year) - percentage%'],
+    ['  Example: undergraduate - IIT Delhi (2020) - 85% | postgraduate - IIM Bangalore (2022) - 90%'],
+    ['• Work Experience: Format: designation at company (department) - from_date to to_date'],
+    ['  Example: Software Developer at Tech Corp (Engineering) - 2022-01-01 to 2024-01-01'],
+    [''],
+    ['DOCUMENTS:'],
+    ['• Document Link: Google Drive folder link or any document URL (optional)'],
+    [''],
+    ['VALIDATION RULES:'],
+    ['• All REQUIRED fields must be filled'],
+    ['• Email addresses must be unique'],
+    ['• Employee IDs must be unique'],
+    ['• Access Card Numbers must be unique'],
+    ['• Phone numbers must have at least 10 digits'],
+    ['• Dates must be in YYYY-MM-DD format'],
+    ['• Numeric fields (Aadhaar, UAN, ESIC) must contain only digits'],
+    [''],
+    ['TROUBLESHOOTING:'],
+    ['• If import fails, check the error messages for specific field issues'],
+    ['• Ensure all required fields are filled'],
+    ['• Verify data formats match the examples'],
+    ['• Check for duplicate email addresses, employee IDs, or access card numbers'],
+    [''],
+    ['For support, contact the IT department or system administrator.']
+  ];
+
+  const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionsData);
+  
+  // Set column width for instructions sheet
+  instructionsSheet['!cols'] = [{ wch: 80 }];
+  
+  // Add both sheets to workbook
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+  XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
   
   const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
   const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   
-  saveAs(data, 'employee_template.xlsx');
+  saveAs(data, 'Worley_Ventures_Employee_Import_Template.xlsx');
 };

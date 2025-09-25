@@ -781,13 +781,14 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
             Import Excel
           </button>
           
-          <button
+          {/* <button
             onClick={handleDownloadTemplate}
             className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            title="Download Excel template with instructions and examples"
           >
             <Download className="w-4 h-4 mr-2" />
-            Template
-          </button>
+            Download Template
+          </button> */}
         </div>
       </div>
 
@@ -2472,6 +2473,11 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                     <p className="text-gray-600 mb-4">
                       Choose an Excel file to import employee data. Make sure the file follows the correct format.
                     </p>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <p className="text-yellow-800 text-sm">
+                        <strong>Important:</strong> If you downloaded our template, make sure to delete the instruction row (Row 1) before importing your data.
+                      </p>
+                    </div>
                     <input
                       type="file"
                       accept=".xlsx,.xls"
@@ -2489,15 +2495,24 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                   </div>
                   
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h5 className="font-medium text-blue-900 mb-2">Need a template?</h5>
+                    <h5 className="font-medium text-blue-900 mb-2">📋 Need a template?</h5>
                     <p className="text-blue-700 text-sm mb-3">
-                      Download our Excel template to ensure your data is in the correct format.
+                      Download our comprehensive Excel template with detailed instructions and examples to ensure your data is in the correct format.
                     </p>
+                    <div className="space-y-2 mb-3">
+                      <p className="text-blue-600 text-xs font-medium">Template includes:</p>
+                      <ul className="text-blue-600 text-xs space-y-1 ml-4">
+                        <li>• Detailed field specifications and validation rules</li>
+                        <li>• Two complete example employees with education & experience</li>
+                        <li>• Empty rows ready for your data</li>
+                        <li>• Separate instructions sheet with troubleshooting guide</li>
+                      </ul>
+                    </div>
                     <button
                       onClick={handleDownloadTemplate}
-                      className="inline-flex items-center px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium"
                     >
-                      <Download className="w-4 h-4 mr-1" />
+                      <Download className="w-4 h-4 mr-2" />
                       Download Template
                     </button>
                   </div>
