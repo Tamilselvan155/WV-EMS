@@ -5,11 +5,21 @@ import { Employee } from '../types';
 
 // Export employees to Excel
 export const exportToExcel = (employees: Employee[], filename: string = 'employees.xlsx') => {
-  // Prepare data for Excel export - each education/experience gets its own row
+  // Prepare data for Excel export - single row per employee with structured education/experience
   const excelData: any[] = [];
   
   employees.forEach(employee => {
-    const baseData = {
+    // Format education data as simple readable string
+    const educationData = employee.education?.map(edu => 
+      `${edu.level} - ${edu.institution} (${edu.year}) - ${edu.percentage}%`
+    ).join(' | ') || '';
+
+    // Format experience data as simple readable string
+    const experienceData = employee.experience?.map(exp => 
+      `${exp.designation} at ${exp.company} (${exp.department}) - ${exp.from} to ${exp.to || 'Present'}`
+    ).join(' | ') || '';
+
+    const rowData = {
       'Employee ID': employee.personal?.employeeId || '',
       'Access Card Number': employee.personal?.accessCardNumber || '',
       'First Name': employee.firstName || employee.personal?.firstName || '',
@@ -41,33 +51,13 @@ export const exportToExcel = (employees: Employee[], filename: string = 'employe
       'Branch': employee.bank?.branch || '',
       'Account Type': employee.bank?.accountType || '',
       'Document Link': employee.documents?.driveLink || '',
+      'Education Details': educationData,
+      'Work Experience': experienceData,
       'Created At': employee.createdAt ? new Date(employee.createdAt).toLocaleDateString() : '',
       'Updated At': employee.updatedAt ? new Date(employee.updatedAt).toLocaleDateString() : ''
     };
 
-    // If employee has education or experience, create separate rows for each
-    const maxEntries = Math.max(
-      employee.education?.length || 0,
-      employee.experience?.length || 0,
-      1 // At least one row per employee
-    );
-
-    for (let i = 0; i < maxEntries; i++) {
-      const rowData = {
-        ...baseData,
-        'Education Level': employee.education?.[i]?.level || '',
-        'Education Institution': employee.education?.[i]?.institution || '',
-        'Education Year': employee.education?.[i]?.year || '',
-        'Education Percentage': employee.education?.[i]?.percentage || '',
-        'Experience Company': employee.experience?.[i]?.company || '',
-        'Experience Designation': employee.experience?.[i]?.designation || '',
-        'Experience Department': employee.experience?.[i]?.department || '',
-        'Experience From Date': employee.experience?.[i]?.from ? (typeof employee.experience[i].from === 'string' ? employee.experience[i].from.split('T')[0] : new Date(employee.experience[i].from).toISOString().split('T')[0]) : '',
-        'Experience To Date': employee.experience?.[i]?.to ? (typeof employee.experience[i].to === 'string' ? employee.experience[i].to.split('T')[0] : new Date(employee.experience[i].to).toISOString().split('T')[0]) : '',
-        'Experience Current': employee.experience?.[i]?.current ? 'Yes' : 'No'
-      };
       excelData.push(rowData);
-    }
   });
 
   // Create workbook and worksheet
@@ -107,16 +97,8 @@ export const exportToExcel = (employees: Employee[], filename: string = 'employe
     { wch: 20 }, // Branch
     { wch: 15 }, // Account Type
     { wch: 30 }, // Document Link
-    { wch: 15 }, // Education Level
-    { wch: 25 }, // Education Institution
-    { wch: 10 }, // Education Year
-    { wch: 12 }, // Education Percentage
-    { wch: 20 }, // Experience Company
-    { wch: 20 }, // Experience Designation
-    { wch: 15 }, // Experience Department
-    { wch: 12 }, // Experience From Date
-    { wch: 12 }, // Experience To Date
-    { wch: 10 }, // Experience Current
+    { wch: 50 }, // Education Details (JSON)
+    { wch: 50 }, // Work Experience (JSON)
     { wch: 12 }, // Created At
     { wch: 12 }  // Updated At
   ];
@@ -145,16 +127,49 @@ export const importFromExcel = (file: File): Promise<Employee[]> => {
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        // Group rows by Employee ID to combine education/experience entries
-        const employeeMap = new Map<string, any>();
+        // Process each row as a complete employee record
+        const employees: Employee[] = jsonData.map((row: any) => {
+          // Parse education details from simple string format
+          let education: any[] = [];
+          if (row['Education Details']) {
+            const educationEntries = row['Education Details'].split(' | ').filter((entry: string) => entry.trim());
+            education = educationEntries.map((entry: string) => {
+              // Parse format: "level - institution (year) - percentage%"
+              const match = entry.match(/^(.+?)\s*-\s*(.+?)\s*\((\d+)\)\s*-\s*(\d+(?:\.\d+)?)%$/);
+              if (match) {
+                return {
+                  level: match[1].trim(),
+                  institution: match[2].trim(),
+                  year: parseInt(match[3]),
+                  percentage: parseFloat(match[4])
+                };
+              }
+              return null;
+            }).filter(Boolean);
+          }
 
-        jsonData.forEach((row: any) => {
-          const employeeId = row['Employee ID'];
-          if (!employeeId) return;
+          // Parse work experience from simple string format
+          let experience: any[] = [];
+          if (row['Work Experience']) {
+            const experienceEntries = row['Work Experience'].split(' | ').filter((entry: string) => entry.trim());
+            experience = experienceEntries.map((entry: string) => {
+              // Parse format: "designation at company (department) - from to to"
+              const match = entry.match(/^(.+?)\s+at\s+(.+?)\s+\((.+?)\)\s*-\s*(.+?)\s+to\s+(.+)$/);
+              if (match) {
+                return {
+                  designation: match[1].trim(),
+                  company: match[2].trim(),
+                  department: match[3].trim(),
+                  from: match[4].trim(),
+                  to: match[5].trim() === 'Present' ? '' : match[5].trim(),
+                  current: match[5].trim() === 'Present'
+                };
+              }
+              return null;
+            }).filter(Boolean);
+          }
 
-          if (!employeeMap.has(employeeId)) {
-            // Create base employee data
-            employeeMap.set(employeeId, {
+          return {
               personal: {
                 firstName: row['First Name'] || '',
                 lastName: row['Last Name'] || '',
@@ -202,38 +217,10 @@ export const importFromExcel = (file: File): Promise<Employee[]> => {
               documents: {
                 driveLink: row['Document Link'] || ''
               },
-              education: [],
-              experience: []
-            });
-          }
-
-          const employee = employeeMap.get(employeeId);
-
-          // Add education entry if present
-          if (row['Education Level'] || row['Education Institution']) {
-            employee.education.push({
-              level: row['Education Level'] || 'undergraduate',
-              institution: row['Education Institution'] || '',
-              year: parseInt(row['Education Year']) || new Date().getFullYear(),
-              percentage: parseFloat(row['Education Percentage']) || 0
-            });
-          }
-
-          // Add experience entry if present
-          if (row['Experience Company'] || row['Experience Designation']) {
-            employee.experience.push({
-              company: row['Experience Company'] || '',
-              designation: row['Experience Designation'] || '',
-              department: row['Experience Department'] || '',
-              from: row['Experience From Date'] || '',
-              to: row['Experience To Date'] || '',
-              current: row['Experience Current'] === 'Yes' || row['Experience Current'] === 'yes' || row['Experience Current'] === 'true'
-            });
-          }
+            education: education,
+            experience: experience
+          };
         });
-
-        // Convert map to array
-        const employees: Employee[] = Array.from(employeeMap.values());
 
         resolve(employees);
       } catch (error) {
@@ -253,7 +240,7 @@ export const importFromExcel = (file: File): Promise<Employee[]> => {
 // Download Excel template
 export const downloadTemplate = () => {
   const templateData = [
-    // First employee with education and experience
+    // Example employee 1 with education and experience
     {
       'Employee ID': 'EMP001',
       'Access Card Number': 'AC123456',
@@ -286,104 +273,44 @@ export const downloadTemplate = () => {
       'Branch': 'Main Branch',
       'Account Type': 'savings',
       'Document Link': 'https://drive.google.com/drive/folders/...',
-      'Education Level': 'undergraduate',
-      'Education Institution': 'University of Technology',
-      'Education Year': '2020',
-      'Education Percentage': '85',
-      'Experience Company': 'Tech Corp',
-      'Experience Designation': 'Software Developer',
-      'Experience Department': 'Engineering',
-      'Experience From Date': '2022-01-01',
-      'Experience To Date': '2024-01-01',
-      'Experience Current': 'No'
+      'Education Details': 'undergraduate - University of Technology (2020) - 85% | postgraduate - Advanced Institute (2022) - 90%',
+      'Work Experience': 'Software Developer at Tech Corp (Engineering) - 2022-01-01 to 2024-01-01 | Senior Developer at Startup Inc (Engineering) - 2024-01-01 to Present'
     },
-    // Second row for same employee - additional education
+    // Example employee 2 with different education and experience
     {
-      'Employee ID': 'EMP001',
-      'Access Card Number': 'AC123456',
-      'First Name': 'John',
-      'Last Name': 'Doe',
-      'Email': 'john.doe@example.com',
-      'Phone': '+1234567890',
-      'Alternate Phone': '+0987654321',
-      'Date of Birth': '1990-01-01',
-      'Gender': 'male',
-      'Blood Group': 'O+',
-      'Marital Status': 'single',
-      'Current Address': '123 Main St, City, State',
-      'Permanent Address': '123 Main St, City, State',
-      'Emergency Contact Name': 'Jane Doe',
-      'Emergency Contact Relation': 'Sister',
-      'Emergency Contact Phone': '+1122334455',
-      'Department': 'IT',
-      'Designation': 'Software Developer',
-      'Joining Date': '2024-01-01',
+      'Employee ID': 'EMP002',
+      'Access Card Number': 'AC789012',
+      'First Name': 'Jane',
+      'Last Name': 'Smith',
+      'Email': 'jane.smith@example.com',
+      'Phone': '+9876543210',
+      'Alternate Phone': '+1122334455',
+      'Date of Birth': '1988-05-15',
+      'Gender': 'female',
+      'Blood Group': 'A+',
+      'Marital Status': 'married',
+      'Current Address': '456 Oak Ave, City, State',
+      'Permanent Address': '456 Oak Ave, City, State',
+      'Emergency Contact Name': 'Bob Smith',
+      'Emergency Contact Relation': 'Husband',
+      'Emergency Contact Phone': '+9988776655',
+      'Department': 'HR',
+      'Designation': 'HR Manager',
+      'Joining Date': '2023-06-01',
       'Employment Type': 'fulltime',
       'Status': 'active',
-      'PAN': 'ABCDE1234F',
-      'Aadhaar': '123456789012',
-      'UAN': '123456789012',
-      'ESIC': '123456789012',
-      'Bank Account Number': '1234567890',
-      'IFSC': 'SBIN0001234',
-      'Bank Name': 'State Bank of India',
-      'Branch': 'Main Branch',
+      'PAN': 'FGHIJ5678K',
+      'Aadhaar': '987654321098',
+      'UAN': '987654321098',
+      'ESIC': '987654321098',
+      'Bank Account Number': '9876543210',
+      'IFSC': 'HDFC0001234',
+      'Bank Name': 'HDFC Bank',
+      'Branch': 'Central Branch',
       'Account Type': 'savings',
       'Document Link': 'https://drive.google.com/drive/folders/...',
-      'Education Level': 'postgraduate',
-      'Education Institution': 'Advanced Institute',
-      'Education Year': '2022',
-      'Education Percentage': '90',
-      'Experience Company': '',
-      'Experience Designation': '',
-      'Experience Department': '',
-      'Experience From Date': '',
-      'Experience To Date': '',
-      'Experience Current': 'No'
-    },
-    // Third row for same employee - additional experience
-    {
-      'Employee ID': 'EMP001',
-      'Access Card Number': 'AC123456',
-      'First Name': 'John',
-      'Last Name': 'Doe',
-      'Email': 'john.doe@example.com',
-      'Phone': '+1234567890',
-      'Alternate Phone': '+0987654321',
-      'Date of Birth': '1990-01-01',
-      'Gender': 'male',
-      'Blood Group': 'O+',
-      'Marital Status': 'single',
-      'Current Address': '123 Main St, City, State',
-      'Permanent Address': '123 Main St, City, State',
-      'Emergency Contact Name': 'Jane Doe',
-      'Emergency Contact Relation': 'Sister',
-      'Emergency Contact Phone': '+1122334455',
-      'Department': 'IT',
-      'Designation': 'Software Developer',
-      'Joining Date': '2024-01-01',
-      'Employment Type': 'fulltime',
-      'Status': 'active',
-      'PAN': 'ABCDE1234F',
-      'Aadhaar': '123456789012',
-      'UAN': '123456789012',
-      'ESIC': '123456789012',
-      'Bank Account Number': '1234567890',
-      'IFSC': 'SBIN0001234',
-      'Bank Name': 'State Bank of India',
-      'Branch': 'Main Branch',
-      'Account Type': 'savings',
-      'Document Link': 'https://drive.google.com/drive/folders/...',
-      'Education Level': '',
-      'Education Institution': '',
-      'Education Year': '',
-      'Education Percentage': '',
-      'Experience Company': 'Startup Inc',
-      'Experience Designation': 'Senior Developer',
-      'Experience Department': 'Engineering',
-      'Experience From Date': '2024-01-01',
-      'Experience To Date': '',
-      'Experience Current': 'Yes'
+      'Education Details': '12th - Central High School (2006) - 92% | undergraduate - Business University (2010) - 88% | postgraduate - Management Institute (2012) - 85%',
+      'Work Experience': 'HR Executive at ABC Corp (Human Resources) - 2012-07-01 to 2018-12-31 | HR Manager at XYZ Ltd (Human Resources) - 2019-01-01 to Present'
     }
   ];
 
@@ -423,16 +350,8 @@ export const downloadTemplate = () => {
     { wch: 20 }, // Branch
     { wch: 15 }, // Account Type
     { wch: 30 }, // Document Link
-    { wch: 15 }, // Education Level
-    { wch: 25 }, // Education Institution
-    { wch: 10 }, // Education Year
-    { wch: 12 }, // Education Percentage
-    { wch: 20 }, // Experience Company
-    { wch: 20 }, // Experience Designation
-    { wch: 15 }, // Experience Department
-    { wch: 12 }, // Experience From Date
-    { wch: 12 }, // Experience To Date
-    { wch: 10 }  // Experience Current
+    { wch: 50 }, // Education Details (JSON)
+    { wch: 50 }  // Work Experience (JSON)
   ];
   worksheet['!cols'] = columnWidths;
 
