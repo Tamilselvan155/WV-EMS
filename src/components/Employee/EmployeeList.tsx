@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, Download, Users, Phone, Mail, MapPin, AlertTriangle, X, Upload, Check } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { fetchEmployees, deleteEmployee, updateEmployee, createEmployee, bulkImportEmployees } from '../../store/slices/employeeSlice';
+import { fetchEmployees, deleteEmployee, updateEmployee, bulkImportEmployees } from '../../store/slices/employeeSlice';
 import { Employee } from '../../types';
 import { exportToExcel, importFromExcel, downloadTemplate } from '../../utils/excelUtils';
 import { formatEmployeeDocumentUrls } from '../../utils/urlUtils';
@@ -19,6 +19,8 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     employee: Employee | null;
@@ -70,23 +72,46 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
 
   // Fetch employees on component mount
   useEffect(() => {
-    dispatch(fetchEmployees({ page: 1, limit: 10 }));
-  }, [dispatch]);
+    dispatch(fetchEmployees({ page: currentPage, limit: itemsPerPage }));
+  }, [dispatch, currentPage, itemsPerPage]);
 
   // Handle search and filter changes
   useEffect(() => {
     const searchParams = {
-      page: 1,
-      limit: 10,
+      page: currentPage,
+      limit: itemsPerPage,
       search: searchTerm || undefined,
       department: selectedDepartment || undefined,
       status: selectedStatus || undefined,
     };
     dispatch(fetchEmployees(searchParams));
-  }, [dispatch, searchTerm, selectedDepartment, selectedStatus]);
+  }, [dispatch, searchTerm, selectedDepartment, selectedStatus, currentPage, itemsPerPage]);
 
   const departments = Array.from(new Set(employees.map(emp => emp.employment?.department || 'Unknown')));
   const statuses = Array.from(new Set(employees.map(emp => emp.employment?.status || 'Unknown')));
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setSelectedDepartment('');
+    setSelectedStatus('');
+    setCurrentPage(1);
+  };
+
+  // Calculate pagination info
+  const totalPages = pagination.totalPages || 1;
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, pagination.totalEmployees || 0);
+  const totalItems = pagination.totalEmployees || 0;
 
   // Delete employee handler
   const handleDeleteEmployee = (employee: Employee) => {
@@ -834,11 +859,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
             </select>
 
             <button
-              onClick={() => {
-                setSearchTerm('');
-                setSelectedDepartment('');
-                setSelectedStatus('');
-              }}
+              onClick={handleClearFilters}
               className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               Clear Filters
@@ -870,16 +891,29 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
         </div>
       </div>
 
-      {/* Results Count */}
-      {/* <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          Showing {employees.length} of {pagination.totalEmployees} employees
-        </p>
-        <button className="inline-flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-          <Download className="w-4 h-4 mr-1" />
-          Export
-        </button>
-      </div> */}
+      {/* Results Count and Pagination Info */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <p className="text-sm text-gray-600">
+            Showing {startItem} to {endItem} of {totalItems} employees
+          </p>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Show:</label>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              className="px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span className="text-sm text-gray-600">per page</span>
+          </div>
+        </div>
+      </div>
 
       {/* Loading State */}
       {loading && (
@@ -1153,6 +1187,100 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!loading && employees.length > 0 && totalPages > 1 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {/* Previous Button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+
+              {/* Page Numbers */}
+              <div className="flex items-center gap-1">
+                {/* First page */}
+                {currentPage > 3 && (
+                  <>
+                    <button
+                      onClick={() => handlePageChange(1)}
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      1
+                    </button>
+                    {currentPage > 4 && (
+                      <span className="px-2 text-gray-500">...</span>
+                    )}
+                  </>
+                )}
+
+                {/* Page numbers around current page */}
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  if (pageNum < 1 || pageNum > totalPages) return null;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        currentPage === pageNum
+                          ? 'text-white bg-blue-600 border border-blue-600'
+                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                {/* Last page */}
+                {currentPage < totalPages - 2 && (
+                  <>
+                    {currentPage < totalPages - 3 && (
+                      <span className="px-2 text-gray-500">...</span>
+                    )}
+                    <button
+                      onClick={() => handlePageChange(totalPages)}
+                      className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Next Button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
