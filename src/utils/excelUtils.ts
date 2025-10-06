@@ -43,6 +43,7 @@ export const exportToExcel = (employees: Employee[], filename: string = 'employe
       'Status': employee.employment?.status || '',
       'PAN': employee.statutory?.pan || '',
       'Aadhaar': employee.statutory?.aadhaar || '',
+      'PF Number': employee.statutory?.pfNumber || '',
       'UAN': employee.statutory?.uan || '',
       'ESIC': employee.statutory?.esic || '',
       'Bank Account Number': employee.bank?.accountNumber || '',
@@ -50,6 +51,7 @@ export const exportToExcel = (employees: Employee[], filename: string = 'employe
       'Bank Name': employee.bank?.bankName || '',
       'Branch': employee.bank?.branch || '',
       'Account Type': employee.bank?.accountType || '',
+      'Account Holder Name': employee.bank?.accountHolderName || '',
       'Document Link': employee.documents?.driveLink || '',
       'Education Details': educationData,
       'Work Experience': experienceData,
@@ -204,10 +206,12 @@ export const importFromExcel = (file: File): Promise<Employee[]> => {
               statutory: {
                 pan: String(row['PAN'] || '').trim(),
                 aadhaar: String(row['Aadhaar'] || '').trim(),
+                pfNumber: String(row['PF Number'] || '').trim(),
                 uan: String(row['UAN'] || '').trim(),
                 esic: String(row['ESIC'] || '').trim()
               },
               bank: {
+                accountHolderName: String(row['Account Holder Name'] || '').trim(),
                 accountNumber: String(row['Bank Account Number'] || '').trim(),
                 ifsc: String(row['IFSC'] || '').trim(),
                 bankName: String(row['Bank Name'] || '').trim(),
@@ -265,6 +269,7 @@ export const downloadTemplate = () => {
       'Status': 'REQUIRED - Options: active, inactive',
       'PAN': 'REQUIRED - Format: AAAAA9999A (5 letters, 4 numbers, 1 letter)',
       'Aadhaar': 'REQUIRED - Exactly 12 digits',
+      'PF Number': 'OPTIONAL - 6-25 characters, letters/numbers/-/',
       'UAN': 'OPTIONAL - Exactly 12 digits',
       'ESIC': 'OPTIONAL - Exactly 10 digits',
       'Bank Account Number': 'REQUIRED - 9-18 digits',
@@ -272,6 +277,7 @@ export const downloadTemplate = () => {
       'Bank Name': 'REQUIRED - Bank name',
       'Branch': 'REQUIRED - Branch name',
       'Account Type': 'REQUIRED - Options: savings, current, salary',
+      'Account Holder Name': 'OPTIONAL - Name as per bank account',
       'Document Link': 'OPTIONAL - Google Drive or any document link',
       'Education Details': 'OPTIONAL - Format: level - institution (year) - percentage% | level - institution (year) - percentage%',
       'Work Experience': 'OPTIONAL - Format: designation at company (department) - from_date to to_date | designation at company (department) - from_date to Present'
@@ -301,6 +307,7 @@ export const downloadTemplate = () => {
       'Status': 'active',
       'PAN': 'ABCDE1234F',
       'Aadhaar': '123456789012',
+      'PF Number': 'PF123456789',
       'UAN': '123456789012',
       'ESIC': '1234567890',
       'Bank Account Number': '1234567890123456',
@@ -308,6 +315,7 @@ export const downloadTemplate = () => {
       'Bank Name': 'State Bank of India',
       'Branch': 'Koramangala Branch',
       'Account Type': 'savings',
+      'Account Holder Name': 'John Doe',
       'Document Link': 'https://drive.google.com/drive/folders/1ABC123DEF456GHI789JKL',
       'Education Details': 'undergraduate - Indian Institute of Technology (2020) - 85% | postgraduate - Indian Institute of Science (2022) - 90%',
       'Work Experience': 'Software Developer at Tech Corp (Engineering) - 2022-01-01 to 2024-01-01 | Senior Developer at Startup Inc (Engineering) - 2024-01-01 to Present'
@@ -337,6 +345,7 @@ export const downloadTemplate = () => {
       'Status': 'active',
       'PAN': 'FGHIJ5678K',
       'Aadhaar': '987654321098',
+      'PF Number': 'PF987654321',
       'UAN': '987654321098',
       'ESIC': '9876543210',
       'Bank Account Number': '9876543210987654',
@@ -344,6 +353,7 @@ export const downloadTemplate = () => {
       'Bank Name': 'HDFC Bank',
       'Branch': 'Whitefield Branch',
       'Account Type': 'savings',
+      'Account Holder Name': 'Jane Smith',
       'Document Link': 'https://drive.google.com/drive/folders/2XYZ789ABC123DEF456GHI',
       'Education Details': '12th - Central High School (2006) - 92% | undergraduate - Delhi University (2010) - 88% | postgraduate - IIM Bangalore (2012) - 85%',
       'Work Experience': 'HR Executive at ABC Corp (Human Resources) - 2012-07-01 to 2018-12-31 | HR Manager at XYZ Ltd (Human Resources) - 2019-01-01 to Present'
@@ -373,6 +383,7 @@ export const downloadTemplate = () => {
       'Status': '',
       'PAN': '',
       'Aadhaar': '',
+      'PF Number': '',
       'UAN': '',
       'ESIC': '',
       'Bank Account Number': '',
@@ -380,6 +391,7 @@ export const downloadTemplate = () => {
       'Bank Name': '',
       'Branch': '',
       'Account Type': '',
+      'Account Holder Name': '',
       'Document Link': '',
       'Education Details': '',
       'Work Experience': ''
