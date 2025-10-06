@@ -5,7 +5,8 @@ import {
   BarChart3, 
   Settings, 
   X,
-  User
+  User,
+  Shield
 } from 'lucide-react';
 import { useAppSelector } from '../../store/hooks';
 import wvLogo from '../../assets/wvlogo.png';
@@ -33,6 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'user-management', label: 'User Management', icon: Shield },
     { id: 'employees', label: 'Employees', icon: Users },
     { id: 'add-employee', label: 'Add Employee', icon: UserPlus },
     // Only show settings for admin users

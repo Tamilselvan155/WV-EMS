@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     match: [
-      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       'Please enter a valid email address',
     ],
   },
@@ -114,6 +114,9 @@ const userSchema = new mongoose.Schema({
     passport: {
       type: String,
     },
+    pfNumber: {
+      type: String,
+    },
     uan: {
       type: String,
     },
@@ -123,6 +126,9 @@ const userSchema = new mongoose.Schema({
   },
   
   bank: {
+    accountHolderName: {
+      type: String,
+    },
     accountNumber: {
       type: String,
     },

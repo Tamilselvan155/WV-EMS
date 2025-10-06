@@ -40,10 +40,12 @@ export interface Employee {
   statutory: {
     pan: string;
     aadhaar: string;
+    pfNumber?: string;
     uan?: string;
     esic?: string;
   };
   bank: {
+    accountHolderName?: string;
     accountNumber: string;
     ifsc: string;
     bankName: string;

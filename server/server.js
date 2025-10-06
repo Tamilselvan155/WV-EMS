@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.js';
 import employeeRoutes from './routes/employees.js';
 import uploadRoutes from './routes/upload.js';
 import dashboardRoutes from './routes/dashboard.js';
+import usersRoutes from './routes/users.js';
 import settingsRoutes from './routes/settings.js';
 
 // Load environment variables
@@ -60,6 +61,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Health check endpoint

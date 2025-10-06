@@ -424,7 +424,16 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
       }
     }
 
+    if (editFormData.statutory?.pfNumber?.trim()) {
+      if (!/^[A-Za-z0-9\/-]{6,25}$/.test(editFormData.statutory.pfNumber.trim())) {
+        errors.push('PF Number must be 6-25 characters, letters/numbers/"/"/"-"');
+      }
+    }
+
     // Banking Details Validation
+    if (!editFormData.bank?.accountHolderName?.trim()) {
+      errors.push('Account Holder Name is required');
+    }
     if (!editFormData.bank?.accountNumber?.trim()) {
       errors.push('Account Number is required');
     } else if (!/^[0-9]{9,18}$/.test(editFormData.bank.accountNumber.trim())) {
@@ -1716,6 +1725,18 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        PF Number
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.statutory?.pfNumber || ''}
+                        onChange={(e) => handleNestedEditFormChange('statutory', 'pfNumber', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., TN/ABC/1234567"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1723,6 +1744,18 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                 <div>
                   <h4 className="text-lg font-medium text-gray-900 mb-4">Banking Details</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Account Holder Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={editFormData.bank?.accountHolderName || ''}
+                        onChange={(e) => handleNestedEditFormChange('bank', 'accountHolderName', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Account Number *

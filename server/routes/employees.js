@@ -20,9 +20,8 @@ router.get('/', async (req, res) => {
         { 'statutory.esic': { $regex: search, $options: 'i' } }
       ];
     }
-    if (role) {
-      query.role = role;
-    }
+    // Always constrain to employees list
+    query.role = 'employee';
     if (department) {
       query['employment.department'] = department;
     }

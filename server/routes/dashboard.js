@@ -6,34 +6,40 @@ const router = express.Router();
 // Get dashboard statistics
 router.get('/stats', async (req, res) => {
   try {
-    const totalEmployees = await User.countDocuments();
+    const totalUsers = await User.countDocuments();
+    const totalEmployees = await User.countDocuments({ role: 'employee' });
     const totalAdmins = await User.countDocuments({ role: 'admin' });
     const totalManagers = await User.countDocuments({ role: 'manager' });
     const totalRegularEmployees = await User.countDocuments({ role: 'employee' });
     const totalInactiveEmployees = await User.countDocuments({ 
+      role: 'employee',
       $or: [
         { 'employment.status': 'inactive' },
         { isActive: false }
       ]
     });
 
-    // Get recent employees (last 30 days)
+    // Get recent employees (last 30 days) - only count actual employees, not users from User Management
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const recentEmployees = await User.countDocuments({
+      role: 'employee',
       createdAt: { $gte: thirtyDaysAgo }
     });
 
-    // Get employees by department (if department field exists)
+    // Get employees by department (if department field exists) - only actual employees
     const employeesByDepartment = await User.aggregate([
-      { $match: { 'employment.department': { $exists: true, $ne: null } } },
+      { $match: { 
+        role: 'employee',
+        'employment.department': { $exists: true, $ne: null } 
+      } },
       { $group: { _id: '$employment.department', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ]);
 
-    // Get recent activity (last 10 employees created) with detailed information
-    const recentActivity = await User.find()
+    // Get recent activity (last 10 employees created) with detailed information - only actual employees
+    const recentActivity = await User.find({ role: 'employee' })
       .select('firstName lastName email role createdAt personal employment contact')
       .sort({ createdAt: -1 })
       .limit(10);
@@ -42,6 +48,7 @@ router.get('/stats', async (req, res) => {
       success: true,
       data: {
         overview: {
+          totalUsers,
           totalEmployees,
           totalAdmins,
           totalManagers,
@@ -102,6 +109,7 @@ router.get('/performance', async (req, res) => {
 router.get('/departments', async (req, res) => {
   try {
     const departmentStats = await User.aggregate([
+      { $match: { role: 'employee' } }, // Only count employees, not users from User Management
       {
         $group: {
           _id: '$employment.department',

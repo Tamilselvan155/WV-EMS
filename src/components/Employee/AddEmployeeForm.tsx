@@ -47,10 +47,12 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
     statutory: {
       pan: '',
       aadhaar: '',
+      pfNumber: '',
       uan: '',
       esic: '',
     },
     bank: {
+      accountHolderName: '',
       accountNumber: '',
       ifsc: '',
       bankName: '',
@@ -417,6 +419,12 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
       }
     }
 
+    if (formData.statutory.pfNumber?.trim()) {
+      if (!/^[A-Za-z0-9\/-]{6,25}$/.test(formData.statutory.pfNumber.trim())) {
+        errors.push('PF Number must be 6-25 characters, letters/numbers/"/"/"-"');
+      }
+    }
+
     if (formData.statutory.esic?.trim()) {
       if (!/^[0-9]{10}$/.test(formData.statutory.esic.trim())) {
         errors.push('ESIC Number must be exactly 10 digits');
@@ -424,6 +432,12 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
     }
 
     // Banking Details Validation
+    if (!formData.bank.accountHolderName?.trim()) {
+      errors.push('Account Holder Name is required');
+    } else if (!/^[a-zA-Z\s.]{2,100}$/.test(formData.bank.accountHolderName.trim())) {
+      errors.push('Account Holder Name must be 2-100 letters/spaces');
+    }
+
     if (!formData.bank.accountNumber?.trim()) {
       errors.push('Account Number is required');
     } else if (!/^[0-9]{9,18}$/.test(formData.bank.accountNumber.trim())) {
@@ -1139,6 +1153,16 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
                 />
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">PF Number</label>
+                <input
+                  type="text"
+                  value={formData.statutory.pfNumber || ''}
+                  onChange={(e) => handleInputChange('statutory', 'pfNumber', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., TN/ABC/1234567"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Aadhaar Number*</label>
                 <input
                   type="text"
@@ -1146,6 +1170,16 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
                   onChange={(e) => handleInputChange('statutory', 'aadhaar', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">PF Number</label>
+                <input
+                  type="text"
+                  value={formData.statutory.pfNumber || ''}
+                  onChange={(e) => handleInputChange('statutory', 'pfNumber', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., TN/ABC/1234567"
                 />
               </div>
               <div>
@@ -1172,6 +1206,16 @@ const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({ onBack }) => {
             <div className="border-t pt-6">
               <h4 className="text-md font-medium text-gray-900 mb-4">Banking Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Holder Name*</label>
+                  <input
+                    type="text"
+                    value={formData.bank.accountHolderName || ''}
+                    onChange={(e) => handleInputChange('bank', 'accountHolderName', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Account Number*</label>
                   <input

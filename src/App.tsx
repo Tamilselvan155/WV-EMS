@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 import EmployeeList from './components/Employee/EmployeeList';
 import AddEmployeeForm from './components/Employee/AddEmployeeForm';
 import AdminSettings from './components/Admin/AdminSettings';
+import UserManagement from './components/Users/UserManagement';
 import Toast from './components/UI/Toast';
 
 const MainApp: React.FC = () => {
@@ -81,6 +82,8 @@ const MainApp: React.FC = () => {
         return <Dashboard onViewChange={setCurrentView} />;
       case 'employees':
         return <EmployeeList onAddEmployee={() => setCurrentView('add-employee')} />;
+      case 'user-management':
+        return <UserManagement />;
       case 'add-employee':
         return <AddEmployeeForm onBack={() => setCurrentView('employees')} />;
       case 'search':
