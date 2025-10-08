@@ -862,6 +862,32 @@ router.post('/bulk', async (req, res) => {
   }
 });
 
+// Export all employees for Excel
+router.get('/export/all', async (req, res) => {
+  try {
+    const query = { role: 'employee' };
+    
+    // Get all employees without pagination
+    const employees = await User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        employees,
+        total: employees.length
+      }
+    });
+  } catch (error) {
+    console.error('Export employees error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during export'
+    });
+  }
+});
+
 // Delete employee
 router.delete('/:id', async (req, res) => {
   try {

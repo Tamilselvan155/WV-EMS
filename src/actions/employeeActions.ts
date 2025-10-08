@@ -63,6 +63,12 @@ export const employeeAPI = {
     console.log('Backend bulk import response:', response.data);
     return response.data;
   },
+
+  // Export all employees for Excel
+  exportAllEmployees: async () => {
+    const response = await apiInstance.get(`${EMPLOYEES_ENDPOINT}/export/all`);
+    return response.data;
+  },
 };
 
 export default employeeAPI;

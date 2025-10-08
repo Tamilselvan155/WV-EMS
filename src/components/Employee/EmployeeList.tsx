@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Plus, Edit, Trash2, Eye, Download, Users, Phone, Mail, MapPin, AlertTriangle, X, Upload, Check } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchEmployees, deleteEmployee, updateEmployee, bulkImportEmployees } from '../../store/slices/employeeSlice';
+import { employeeAPI } from '../../actions/employeeActions';
 import { Employee } from '../../types';
 import { exportToExcel, importFromExcel, downloadTemplate } from '../../utils/excelUtils';
 import { formatEmployeeDocumentUrls } from '../../utils/urlUtils';
@@ -55,6 +56,9 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
     preview: null,
   });
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportProgress, setExportProgress] = useState<string>('');
   const [importError, setImportError] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<{
     current: number;
@@ -620,13 +624,83 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
   };
 
   // Excel Export Functions
-  const handleExportToExcel = () => {
-    const filename = `employees_${new Date().toISOString().split('T')[0]}.xlsx`;
-    exportToExcel(employees, filename);
+  const handleExportToExcel = async () => {
+    setIsExporting(true);
+    setExportError(null); // Clear any previous export errors
+    setExportProgress('Preparing export...');
+    try {
+      // Use dedicated export endpoint with retry logic to handle rate limiting
+      setExportProgress('Fetching all employees...');
+      const exportResponse = await retryWithBackoff(() => employeeAPI.exportAllEmployees());
+      const allEmployees = exportResponse.data.employees;
+      
+      if (!allEmployees || allEmployees.length === 0) {
+        setExportError('No employees found to export');
+        return;
+      }
+      
+      setExportProgress(`Exporting ${allEmployees.length} employees...`);
+      const filename = `employees_${new Date().toISOString().split('T')[0]}.xlsx`;
+      exportToExcel(allEmployees, filename);
+      setExportProgress('Export completed successfully!');
+    } catch (error: any) {
+      console.error('Error fetching employees for export:', error);
+      
+      // Handle specific error types
+      if (error.response?.status === 429) {
+        setExportError('Too many requests. Please wait a moment and try again.');
+      } else if (error.response?.status === 500) {
+        setExportError('Server error. Please try again later.');
+      } else {
+        setExportError('Failed to fetch employees for export. Please try again.');
+      }
+      
+      // Fallback to current page employees if export endpoint fails
+      try {
+        setExportProgress('Using fallback method...');
+        const filename = `employees_${new Date().toISOString().split('T')[0]}.xlsx`;
+        exportToExcel(employees, filename);
+        setExportError(null); // Clear error if fallback succeeds
+        setExportProgress('Export completed (fallback method)!');
+      } catch (fallbackError) {
+        console.error('Fallback export also failed:', fallbackError);
+        setExportError('Export failed. Please try again.');
+      }
+    } finally {
+      setIsExporting(false);
+      // Clear progress after a short delay
+      setTimeout(() => setExportProgress(''), 3000);
+    }
   };
 
   const handleDownloadTemplate = () => {
     downloadTemplate();
+  };
+
+  // Clear export error when component unmounts or when user starts new export
+  useEffect(() => {
+    return () => {
+      setExportError(null);
+    };
+  }, []);
+
+  // Retry function with exponential backoff
+  const retryWithBackoff = async (fn: () => Promise<any>, maxRetries: number = 3, baseDelay: number = 1000): Promise<any> => {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error: any) {
+        if (error.response?.status === 429 && attempt < maxRetries - 1) {
+          // Rate limited, wait with exponential backoff
+          const delay = baseDelay * Math.pow(2, attempt);
+          setExportProgress(`Rate limited. Retrying in ${Math.ceil(delay / 1000)}s... (attempt ${attempt + 1}/${maxRetries})`);
+          console.log(`Rate limited. Retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        throw error;
+      }
+    }
   };
 
   // Export single employee to Excel
@@ -801,10 +875,15 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
           
           <button
             onClick={handleExportToExcel}
-            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            disabled={isExporting}
+            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="w-4 h-4 mr-2" />
-            Export Excel
+            {isExporting ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
+            {isExporting ? (exportProgress || 'Exporting...') : 'Export Excel'}
           </button>
           
           <button
@@ -939,6 +1018,26 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
         </div>
       )}
 
+      {/* Export Error State */}
+      {exportError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <div className="flex items-center">
+            <AlertTriangle className="w-5 h-5 text-red-400 mr-2" />
+            {exportError}
+          </div>
+        </div>
+      )}
+
+      {/* Export Progress State */}
+      {exportProgress && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+            {exportProgress}
+          </div>
+        </div>
+      )}
+
       {/* Employee List */}
       {viewMode === 'table' ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -959,9 +1058,9 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Access Card
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ESI
-                  </th>
+                  </th> */}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -1001,9 +1100,9 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({ onAddEmployee }) => 
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{employee.personal?.accessCardNumber || 'N/A'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    {/* <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{employee.statutory?.esic || 'N/A'}</div>
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         employee.employment?.status === 'active' 
